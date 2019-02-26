@@ -1,0 +1,1 @@
+/usr/bin/c++    -std=c++11 -march=native -O3 -pthread -g   CMakeFiles/Example.dir/main.cc.o CMakeFiles/Example.dir/home/lvcheng1/messenger/log/src/mlog.cc.o  -o Example -rdynamic 
