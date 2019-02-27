@@ -22,14 +22,21 @@ Socket::~Socket() {
 }
 
 int Socket::Listen(const std::string &bind_ip) {
-  int status;
+  int ret;
   struct sockaddr_in serverAddr;
 
-  sock_fd_ = socket(AF_INET, SOCK_STREAM, DEF_PROTOCOL);
+  sock_fd_ = socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, DEF_PROTOCOL);
   if (sock_fd_ < kSUCCESS) {
 
     return sock_fd_;
   }
+
+//  打开 socket 端口复用, 防止测试的时候出现 Address already in use
+//  int on = 1;
+//  ret = setsockopt(sock_fd_, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+//  if (-1 == ret) {
+//    log_err("set socket error")
+//  }
 
   int flags = fcntl(sock_fd_, F_GETFL, 0);
   if (flags == -1) {
@@ -50,26 +57,26 @@ int Socket::Listen(const std::string &bind_ip) {
   }
   serverAddr.sin_port = htons(port_);
 
-  status = bind(sock_fd_, (struct sockaddr *) &serverAddr, sizeof(serverAddr));
-  if (status < kSUCCESS) {
+  ret = bind(sock_fd_, (struct sockaddr *) &serverAddr, sizeof(serverAddr));
+  if (ret < kSUCCESS) {
     log_err("bind error");
   }
 
-  status = listen(sock_fd_, BACKLOG);
-  if (status < 0) {
+  ret = listen(sock_fd_, BACKLOG);
+  if (ret < 0) {
     log_err("listen error");
   }
 
   is_listen_ = true;
 
   if (!is_block_) {
-    status = SetNonBlock(sock_fd_);
-    if (status == -1) {
+    ret = SetNonBlock(sock_fd_);
+    if (ret == -1) {
       log_err("set listen_fd non block failed");
     }
   }
 
-  return status;
+  return ret;
 }
 
 int Socket::SetNonBlock(int sockfd) {

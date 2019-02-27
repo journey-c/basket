@@ -4,43 +4,56 @@
 
 #include <sys/epoll.h>
 #include <unistd.h>
+#include <iostream>
 
 #include "work_thread.h"
 
 namespace forward {
 
 WorkThread::WorkThread()
-    : quit_(false),
+    : thread_id_(0),
       time_out_ms_(EPOLL_DEFINE_TIME_OUT),
-      thread_ptr_(new std::thread(std::bind(&WorkThread::ThreadMain, this))),
-      ep_ptr_(new Epoll) {
-  thread_id_ = thread_ptr_->get_id();
+      quit_(true),
+      ep_ptr_(new Epoll(FORWARD_MAX_CLIENTS_NUM)),
+      thread_ptr_(nullptr) {
 }
 
 WorkThread::~WorkThread() {
+  Quit();
+}
 
+void WorkThread::Start() {
+  quit_ = false;
+  thread_ptr_.reset(new std::thread(std::bind(&WorkThread::ThreadMain, this)));
+  thread_id_ = thread_ptr_->get_id();
 }
 
 void WorkThread::ThreadMain() {
+  int ret;
   while (!quit_) {
-    ssize_t status;
     char buf[1000];
     std::vector<std::pair<int, uint32_t >> read_list;
-
-    int wait_num = ep_ptr_->Wait(&read_list, time_out_ms_);
-    if (status != 0) {
-      log_warn("epoll wait error");
-      abort();
+    ret = ep_ptr_->Wait(&read_list, time_out_ms_);
+    if (ret != 0) {
+      log_err("epoll wait error");
     }
-    for (int i = 0; i < wait_num; ++i) {
-      int fd = read_list[i].first;
-      uint32_t events = read_list[i].second;
-      if (events & EPOLLIN) {
-        status = read(fd, buf, sizeof(buf));
-        if (status) log_err("read error");
+    for (auto &item : read_list) {
+      int fd = item.first;
+      uint32_t events = item.second;
+      if (events & EPOLLERR || events & EPOLLHUP) {
+        ep_ptr_->DelEvent(fd);
+      } else if (events & EPOLLIN) {
+        ret = static_cast<int>(read(fd, buf, sizeof(buf) / sizeof(buf[0])));
+        if (ret < 0) {
+          std::cout << ret << std::endl;
+          log_err("read error");
+        }
+        std::string msg = std::string(buf) + "thread_id: " + std::to_string(pthread_self());
+        ret = static_cast<int>(write(fd, msg.c_str(), msg.size()));
 
-        status = write(fd, buf, sizeof(buf));
-        if (status) log_err("write error");
+        if (ret < 0) {
+          log_err("write error");
+        }
       }
     }
   }

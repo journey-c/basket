@@ -5,7 +5,7 @@
 #include "dispatch_thread.h"
 
 int main() {
-  forward::DispatchThread dispatchThread(8080, 5);
-
+  forward::DispatchThread *dispatchThread = new forward::DispatchThread("0.0.0.0", 8080, 5, false);
+  dispatchThread->Start();
   return 0;
 }

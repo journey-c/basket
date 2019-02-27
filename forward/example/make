@@ -1,5 +1,7 @@
 #!/bin/bash
 
+rm -f core
+
 cd build
 cmake ../
 make clean

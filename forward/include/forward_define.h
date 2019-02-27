@@ -16,7 +16,7 @@ namespace forward {
 // errno
 #define kSUCCESS 0
 
-#define FORWARD_MAX_CLIENTS_NUM 10240
+#define FORWARD_MAX_CLIENTS_NUM 1024
 #define EPOLL_DEFINE_TIME_OUT 1000
 
 #define clean_errno() (errno == 0 ? "none" : strerror(errno))

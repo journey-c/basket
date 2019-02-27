@@ -17,18 +17,20 @@ namespace forward {
 class WorkThread {
  public:
   WorkThread();
-  ~WorkThread();
+  virtual ~WorkThread();
   int Acceptwork(const int &word_fd_, const int &events);
+  void Start();
   void Quit();
 
  private:
   void ThreadMain();
 
   std::thread::id thread_id_;
-  std::unique_ptr<std::thread> thread_ptr_;
+  int time_out_ms_;
+
   std::atomic<bool> quit_;
   std::unique_ptr<Epoll> ep_ptr_;
-  int time_out_ms_;
+  std::unique_ptr<std::thread> thread_ptr_;
   /*
    * not copy and copy assign
    */
