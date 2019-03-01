@@ -13,6 +13,10 @@ namespace forward {
 #define DEF_PROTOCOL 0
 #define BACKLOG 5
 
+#define DEF_HEART_BEAT 5
+#define DEF_CLEAN_INTERVAL 1000
+#define DEF_MAX_MSG_LEN 2048
+
 // errno
 #define kSUCCESS 0
 

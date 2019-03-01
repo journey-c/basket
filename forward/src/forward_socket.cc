@@ -32,11 +32,11 @@ int Socket::Listen(const std::string &bind_ip) {
   }
 
 //  打开 socket 端口复用, 防止测试的时候出现 Address already in use
-//  int on = 1;
-//  ret = setsockopt(sock_fd_, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
-//  if (-1 == ret) {
-//    log_err("set socket error")
-//  }
+  int on = 1;
+  ret = setsockopt(sock_fd_, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+  if (-1 == ret) {
+    log_err("set socket error")
+  }
 
   int flags = fcntl(sock_fd_, F_GETFL, 0);
   if (flags == -1) {

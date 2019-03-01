@@ -1,16 +1,32 @@
 //
 // Created by lvcheng1 on 19-2-24.
 //
+#include <iostream>
 
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <iostream>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include "dispatch_thread.h"
 
 namespace forward {
+
+static int SetNonBlock(int sockfd) {
+  int flags;
+  if ((flags = fcntl(sockfd, F_GETFL, 0)) < 0) {
+    close(sockfd);
+    return -1;
+  }
+
+  flags |= O_NONBLOCK;
+  if (fcntl(sockfd, F_SETFL, flags) < 0) {
+    close(sockfd);
+    return -1;
+  }
+  return flags;
+}
 
 DispatchThread::DispatchThread(const std::string &ip, const int &port, const int &work_num, bool is_block)
     : ip_(ip),
@@ -27,14 +43,7 @@ DispatchThread::DispatchThread(const std::string &ip, const int &port, const int
 
 DispatchThread::~DispatchThread() {
   Quit();
-}
-
-void DispatchThread::Start() {
-  quit_ = false;
-  thread_ptr_.reset(new std::thread(std::bind(&DispatchThread::ThreadMain, this)));
-  for (;;) {
-
-  }
+  thread_ptr_->join();
 }
 
 void DispatchThread::ThreadMain() {
@@ -70,8 +79,8 @@ void DispatchThread::ThreadMain() {
       } else if (fd == listen_fd_) {
         if (events & EPOLLIN) {
           int accept_fd = accept(fd, (struct sockaddr *) &client_addr, &client_len);
-
-          work_threads_ptr_[distribution_pointer_++].Acceptwork(accept_fd, EPOLLIN);
+          SetNonBlock(accept_fd);
+          work_threads_ptr_[distribution_pointer_++].AcceptWork(accept_fd, EPOLLIN);
           distribution_pointer_ %= work_num_;
         }
       }
@@ -79,8 +88,16 @@ void DispatchThread::ThreadMain() {
   }
 }
 
+void DispatchThread::Start() {
+  quit_.store(false);
+  thread_ptr_.reset(new std::thread(std::bind(&DispatchThread::ThreadMain, this)));
+  for (;;) {
+
+  }
+}
+
 void DispatchThread::Quit() {
-  quit_ = true;
+  quit_.store(true);
 }
 
 };

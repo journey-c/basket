@@ -8,7 +8,7 @@ namespace forward {
 
 class Epoll {
  public:
-  Epoll(const int &initialize_event_container_size);
+  Epoll(const unsigned long &initialize_event_container_size);
   ~Epoll();
 
   int AddEvent(const int &fd, const int &events);

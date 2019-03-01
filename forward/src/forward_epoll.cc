@@ -9,8 +9,8 @@
 
 namespace forward {
 
-Epoll::Epoll(const int &initialize_event_container_size)
-    : events_(static_cast<size_t >(initialize_event_container_size)) {
+Epoll::Epoll(const unsigned long &initialize_event_container_size)
+    : events_(initialize_event_container_size) {
   efd_ = epoll_create1(EPOLL_CLOEXEC);
   fcntl(efd_, F_SETFD, fcntl(efd_, F_GETFD) | FD_CLOEXEC);
 
@@ -24,24 +24,21 @@ Epoll::~Epoll() {
 }
 
 int Epoll::AddEvent(const int &fd, const int &events) {
-  struct epoll_event ev;
-  memset(&ev, 0, sizeof(ev));
+  struct epoll_event ev = {0};
   ev.data.fd = fd;
   ev.events = static_cast<uint32_t >(events);
   return ::epoll_ctl(efd_, EPOLL_CTL_ADD, fd, &ev);
 }
 
 int Epoll::DelEvent(const int &fd) {
-  struct epoll_event ev;
-  memset(&ev, 0, sizeof(ev));
+  struct epoll_event ev = {0};
   ev.data.fd = fd;
   return ::epoll_ctl(efd_, EPOLL_CTL_DEL, fd, &ev);
 }
 
 int Epoll::ModEvent(const int &fd, const int &old_events,
                     const int &new_events) {
-  struct epoll_event ev;
-  memset(&ev, 0, sizeof(ev));
+  struct epoll_event ev = {0};
   ev.data.fd = fd;
   ev.events = static_cast<uint32_t >(old_events | new_events);
   return ::epoll_ctl(efd_, EPOLL_CTL_MOD, fd, &ev);
