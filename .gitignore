@@ -46,3 +46,4 @@ CMakeCache.txt
 *.iml
 *DS_Store
 .vscode
+tags

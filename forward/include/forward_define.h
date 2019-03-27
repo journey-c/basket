@@ -2,8 +2,8 @@
 // Created by lvcheng1 on 19-2-24.
 //
 
-#ifndef SNAPPY_SERVER_FORWARD_DEFINE_H
-#define SNAPPY_SERVER_FORWARD_DEFINE_H
+#ifndef BASKET_FORWARD_FORWARD_DEFINE_H
+#define BASKET_FORWARD_FORWARD_DEFINE_H
 
 #include <string.h>
 
@@ -34,4 +34,5 @@ namespace forward {
 
 };
 
-#endif //SNAPPY_SERVER_FORWARD_DEFINE_H
+
+#endif // BASKET_FORWARD_FORWARD_DEFINE_H

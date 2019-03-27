@@ -1,5 +1,5 @@
-#ifndef BASKET_INCLUDE_SOCKET_H_
-#define BASKET_INCLUDE_SOCKET_H_
+#ifndef BASKET_FORWARD_FORWARD_SOCKET_H_
+#define BASKET_FORWARD_FORWARD_SOCKET_H_
 
 #include <string>
 
@@ -37,5 +37,6 @@ class Socket {
 };
 
 };
+
 #endif  // BASKET_INCLUDE_SOCKET_H_
 

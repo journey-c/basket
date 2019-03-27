@@ -2,77 +2,65 @@
 // Created by lvcheng1 on 19-2-24.
 //
 
-#ifndef SNAPPY_SERVER_WORK_THREAD_H
-#define SNAPPY_SERVER_WORK_THREAD_H
+#ifndef BASKET_FORWARD_WORK_THREAD_H
+#define BASKET_FORWARD_WORK_THREAD_H
 
 #include <map>
 #include <thread>
 #include <atomic>
-
 #include <functional>
 
-#include "forward_epoll.h"
-#include "forward_define.h"
+#include "forward/include/forward_epoll.h"
+#include "forward/include/forward_define.h"
+#include "forward/include/forward_conn.h"
 
 namespace forward {
 
-class WorkThread;
+class ForwardConn;
+class ConnFactory;
 
 class WorkThread {
  public:
-  WorkThread();
+  explicit WorkThread(ConnFactory *conn_factory);
   virtual ~WorkThread();
 
-  void setHeart_beat__s_(int heart_beat_ms_) {
+  const std::string &getThread_name() const {
+    return thread_name;
+  }
+  void setThread_name(const std::string &thread_name) {
+    WorkThread::thread_name = thread_name;
+  }
+  void setHeart_beat_s_(int heart_beat_ms_) {
     WorkThread::heart_beat_s_ = heart_beat_s_;
   }
-  int AcceptWork(const int &word_fd_, const int &events);
-  void NewConn(const int &conn_fd);
+  void setConn_factory_(ConnFactory *conn_factory_) {
+    WorkThread::conn_factory_ = conn_factory_;
+  }
+
+  int AcceptWork(const int work_fd_, const int events, const std::string &ip, const int16_t port);
   int DelConn(const int &conf_fd);
   void CleanUpExpiredConnection();
   void Start();
   void Quit();
 
  private:
-  class Connector {
-   public:
-    Connector(const std::function<int(const int)> &call_back, const int &fd);
-    ~Connector();
-
-    void Shutdown() {
-      is_connecting_.store("false");
-    }
-    bool isIs_connecting_() const {
-      return is_connecting_;
-    }
-    void setDisconnect_callback_(const std::function<int(const int)> &disconnect_callback_) {
-      Connector::disconnect_callback_ = disconnect_callback_;
-    }
-   private:
-    std::function<int(const int)> disconnect_callback_;
-    std::atomic<bool> is_connecting_;
-    int fd_;
-    /*
-     * not copy and copy assign
-     */
-    Connector(const Connector &);
-    void operator=(const Connector &);
-  };
-
   void ThreadMain();
 
+  std::string thread_name;
   std::thread::id thread_id_;
   int clean_interval_;
   int heart_beat_s_;
   int time_wheel_scale_;
-  std::map<int, std::weak_ptr<Connector>> fd_connector_map_;
-  std::vector<std::vector<std::shared_ptr<Connector>>> time_wheel_;
+  std::map<int, std::weak_ptr<forward::ForwardConn>> fd_connector_map_;
+  std::vector<std::vector<std::shared_ptr<forward::ForwardConn>>> time_wheel_;
   std::atomic<bool> quit_;
-  std::unique_ptr<Epoll> ep_ptr_;
-  std::unique_ptr<std::thread> thread_ptr_;
-  /*
-   * not copy and copy assign
-   */
+  Epoll *ep_ptr_;
+  std::thread *thread_ptr_;
+
+  ConnFactory *conn_factory_;
+/*
+ * not copy and copy assign
+ */
   WorkThread(const WorkThread &);
   void operator=(const WorkThread &);
 };

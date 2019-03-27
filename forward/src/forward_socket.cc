@@ -8,8 +8,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "forward_socket.h"
-#include "forward_define.h"
+#include "forward/include/forward_socket.h"
+#include "forward/include/forward_define.h"
 
 namespace forward {
 
@@ -23,7 +23,7 @@ Socket::~Socket() {
 
 int Socket::Listen(const std::string &bind_ip) {
   int ret;
-  struct sockaddr_in serverAddr;
+  struct sockaddr_in serverAddr = {0};
 
   sock_fd_ = socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, DEF_PROTOCOL);
   if (sock_fd_ < kSUCCESS) {

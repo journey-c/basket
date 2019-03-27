@@ -1,2 +1,0 @@
-/home/lvcheng1/messenger/basket/forward/build/CMakeFiles/edit_cache.dir
-/home/lvcheng1/messenger/basket/forward/build/CMakeFiles/rebuild_cache.dir

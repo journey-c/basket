@@ -1,20 +1,24 @@
-//
-// Created by lvcheng1 on 19-2-24.
-//
+#ifndef BASKET_FORWARD_DISPATCH_THREAD_H_
+#define BASKET_FORWARD_DISPATCH_THREAD_H_
 
-#ifndef SNAPPY_SERVER_DISPATCH_THREAD_H
-#define SNAPPY_SERVER_DISPATCH_THREAD_H
-
-#include "work_thread.h"
-#include "forward_socket.h"
+#include "forward/include/work_thread.h"
+#include "forward/include/forward_socket.h"
 
 namespace forward {
 
+class WorkThread;
+class ForwardConn;
+class ConnFactory;
+
 class DispatchThread {
  public:
-  DispatchThread(const std::string &ip_port, const int &port, const int &work_num, bool is_block);
+  DispatchThread(const std::string &ip_port,
+                 const int &port,
+                 const int &work_num,
+                 forward::ConnFactory *conn_factory);
   virtual ~DispatchThread();
 
+  void setHeart_beat_s_(int heart_beat_ms_);
   void Start();
   void Quit();
 
@@ -28,10 +32,10 @@ class DispatchThread {
   int time_out_ms_;
   int distribution_pointer_;
   std::atomic<bool> quit_;
-  std::unique_ptr<Socket> socket_ptr_;
-  std::unique_ptr<Epoll> epoll_ptr_;
-  std::unique_ptr<WorkThread[]> work_threads_ptr_;
-  std::unique_ptr<std::thread> thread_ptr_;
+  Socket* socket_ptr_;
+  Epoll* epoll_ptr_;
+  WorkThread** work_threads_;
+  std::thread* thread_ptr_;
 
   /*
    * Not copy and copy assign
@@ -42,4 +46,4 @@ class DispatchThread {
 
 };
 
-#endif //SNAPPY_SERVER_DISPATCH_THREAD_H
+#endif // BASKET_FORWARD_DISPATCH_THREAD_H_

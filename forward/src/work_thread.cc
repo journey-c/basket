@@ -1,5 +1,3 @@
-#include <utility>
-
 //
 // Created by lvcheng1 on 19-2-24.
 //
@@ -9,22 +7,11 @@
 #include <iostream>
 #include <sys/time.h>
 
-#include "work_thread.h"
+#include "forward/include/work_thread.h"
 
 namespace forward {
 
-WorkThread::Connector::Connector(const std::function<int(const int)> &disconnect_callback, const int &fd) : disconnect_callback_(disconnect_callback), is_connecting_(true), fd_(fd) {}
-
-WorkThread::Connector::~Connector() {
-  WorkThread::Connector::Shutdown();
-  auto ret = WorkThread::Connector::disconnect_callback_(fd_);
-  if (ret != 0) {
-    log_err("disconnect callback error");
-  }
-  close(fd_);
-}
-
-WorkThread::WorkThread()
+WorkThread::WorkThread(ConnFactory *conn_factory)
     : thread_id_(0),
       clean_interval_(DEF_CLEAN_INTERVAL),
       heart_beat_s_(DEF_HEART_BEAT),
@@ -32,12 +19,15 @@ WorkThread::WorkThread()
       time_wheel_(static_cast<unsigned long>(heart_beat_s_)),
       quit_(true),
       ep_ptr_(new Epoll(FORWARD_MAX_CLIENTS_NUM)),
-      thread_ptr_(nullptr) {
+      thread_ptr_(nullptr),
+      conn_factory_(conn_factory) {
 }
 
 WorkThread::~WorkThread() {
   Quit();
   thread_ptr_->join();
+  delete (ep_ptr_);
+  delete (thread_ptr_);
 }
 
 void WorkThread::ThreadMain() {
@@ -66,7 +56,6 @@ void WorkThread::ThreadMain() {
       time_out_ms = clean_interval_;
     }
 
-    char buf[DEF_MAX_MSG_LEN];
     std::vector<std::pair<int, uint32_t >> read_list;
     ret = ep_ptr_->Wait(&read_list, time_out_ms);
     if (ret != 0) {
@@ -80,40 +69,21 @@ void WorkThread::ThreadMain() {
         DelConn(fd);
         close(fd);
       } else if (events & EPOLLIN) {
-        /*
-         * TODO: to be implemented
-         * Function: Work
-         */
-        ret = static_cast<int>(read(fd, buf, DEF_MAX_MSG_LEN));
-        if (ret < 0) {
-          log_err("read error");
+        if (fd_connector_map_[fd].lock()) {
+          time_wheel_[time_wheel_scale_].push_back(fd_connector_map_[fd].lock());
+          ret = fd_connector_map_[fd].lock()->GetRequest();
+          if (ret) {
+            DelConn(fd);
+            log_warn("message error");
+          }
+          if (fd_connector_map_[fd].lock()->isIs_reply_()) {
+            fd_connector_map_[fd].lock()->SendReply();
+          }
+        } else {
+          log_warn("expire");
         }
-        std::string msg = std::string(buf) + "thread_id: " + std::to_string(pthread_self());
-        ret = static_cast<int>(write(fd, msg.c_str(), msg.size()));
-
-        if (ret < 0) {
-          log_err("write error");
-        }
-        /*
-         * End TODO
-         */
-
-        NewConn(fd);
       }
     }
-  }
-}
-
-void WorkThread::NewConn(const int &conn_fd) {
-  /*
-   * There may be dirty data in the map (the connection entity is not properly destructed, but the client is disconnected)
-   */
-  if (fd_connector_map_.find(conn_fd) == fd_connector_map_.end() || !fd_connector_map_[conn_fd].lock()->isIs_connecting_()) {
-    std::shared_ptr<Connector> tmp = std::make_shared<WorkThread::Connector>(std::bind(&WorkThread::DelConn, this, conn_fd), conn_fd);
-    fd_connector_map_.insert(std::make_pair(conn_fd, tmp));
-    time_wheel_[time_wheel_scale_].push_back(tmp);
-  } else {
-    time_wheel_[time_wheel_scale_].push_back(fd_connector_map_[conn_fd].lock());
   }
 }
 
@@ -128,7 +98,7 @@ void WorkThread::CleanUpExpiredConnection() {
 
 void WorkThread::Start() {
   quit_.store(false);
-  thread_ptr_.reset(new std::thread(std::bind(&WorkThread::ThreadMain, this)));
+  thread_ptr_ = new std::thread(std::bind(&WorkThread::ThreadMain, this));
   thread_id_ = thread_ptr_->get_id();
 }
 
@@ -136,8 +106,20 @@ void WorkThread::Quit() {
   quit_.store(true);
 }
 
-int WorkThread::AcceptWork(const int &work_fd_, const int &events) {
-  return ep_ptr_->AddEvent(work_fd_, events);
+int WorkThread::AcceptWork(const int work_fd_, const int events, const std::string &ip, const int16_t port) {
+  if (WorkThread::conn_factory_ != nullptr) {
+    auto
+        tmp = std::shared_ptr<forward::ForwardConn>(conn_factory_->NewConn(work_fd_,
+                                                                           ip,
+                                                                           port,
+                                                                           this));
+    fd_connector_map_[work_fd_] = tmp;
+    time_wheel_[time_wheel_scale_].push_back(tmp);
+    return ep_ptr_->AddEvent(work_fd_, events);
+  } else {
+    log_warn("conn factory is null");
+    return -1;
+  }
 }
 
 };
