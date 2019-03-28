@@ -1,9 +1,9 @@
 CXX = g++
-CXXFLAGS = -std=c++11 -O2
+CXXFLAGS = -std=c++11 -O2 -DDEBUG
 
 OBJECT = example
 
-SRC_DIR = ./
+SRC_DIR = .
 
 OUTPUT = ./output
 

@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++11 -O2 -lpthread
+CXXFLAGS = -std=c++11 -O2 -lpthread -DDEBUG
 
 SRC_DIR = ./src
 

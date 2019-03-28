@@ -192,18 +192,23 @@ int32_t Write(const LogLevel level, const std::initializer_list<std::string> &ms
 
   std::lock_guard<std::mutex> log_level_file_guard(log_level_file_mutex);
   std::shared_ptr<FILE *> write_file = log_meta.log_level_file_[level];
+  if (write_file == nullptr)
+    return -1;
 
   for (auto elem : msgs) {
-    msg += elem + '\t';
+    msg += elem + '|';
   }
 
   if (msg[msg.size() - 1] != '\n')
     msg.append("\n", 1);
-
   size_t status = fwrite(msg.c_str(), msg.size(), 1, *write_file);
   if (status < 1)
     return -1;
-
+#ifdef DEBUG
+  if (ret != -1) {
+    fflush(*write_file);
+  }
+#endif
   return 0;
 }
 

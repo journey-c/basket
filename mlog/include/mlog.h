@@ -14,7 +14,7 @@ extern std::mutex log_level_str_mutex;
 extern std::mutex log_level_file_mutex;
 
 enum LogLevel {
-  kTrace,
+  kTrace = 0,
   kDebug,
   kInfo,
   kWarn,

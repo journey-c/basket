@@ -1,7 +1,7 @@
 #include "mlog/include/mlog.h"
 
 int main() {
-  mlog::InitLog(kTRACE, "./log", "mlog");  
+  mlog::InitLog(kTRACE, "./log", "mlog");
   mlog::Write(kTRACE, {__func__, "ktrace"});
   mlog::Write(kDEBUG, {__func__, "kdebug"});
   mlog::Write(kINFO, {__func__, "kinfo"});
