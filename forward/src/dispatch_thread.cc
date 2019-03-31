@@ -1,7 +1,3 @@
-//
-// Created by lvcheng1 on 19-2-24.
-//
-
 #include <iostream>
 
 #include <sys/epoll.h>
@@ -106,12 +102,6 @@ void DispatchThread::ThreadMain() {
         }
       }
     }
-  }
-}
-
-void DispatchThread::setHeart_beat_s_(int heart_beat_ms_) {
-  for (int i = 0; i < work_num_; ++i) {
-    work_threads_[i]->setHeart_beat_s_(heart_beat_ms_);
   }
 }
 

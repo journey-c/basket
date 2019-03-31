@@ -1,41 +1,46 @@
 CXX = g++
-CXXFLAGS = -std=c++11 -O2 -DDEBUG
+CXXFLAGS = -std=c++11
 
 OBJECT = example
 
-SRC_DIR = .
+SRC_PATH = .
+BASKET_PATH = ../..
+INCLUDE_PATH = -I$(BASKET_PATH)
+OUT_PATH = ./output
+LIB_PATH = -L$(BASKET_PATH)/forward/lib/
 
-OUTPUT = ./output
-
-LIB_PATH = -L../lib/
+FORWARD = $(BASKET_PATH)/forward/lib/libforward.a
 LIBS = -lforward \
-       -lpthread
+			 -lpthread
 
-INCLUDE_PATH = -I../../
+BASE_OBJS := $(wildcard $(SRC_PATH)/*.cc)
+BASE_OBJS += $(wildcard $(SRC_PATH)/*.c)
+BASE_OBJS += $(wildcard $(SRC_PATH)/*.cpp)
+OBJS = $(patsubst %.cc,%.o,$(BASE_OBJS))
 
 .PHONY : clean
 
-BASE_BOJS := $(wildcard $(SRC_DIR)/*.cc)
-BASE_BOJS += $(wildcard $(SRC_DIR)/*.c)
-BASE_BOJS += $(wildcard $(SRC_DIR)/*.cpp)
-OBJS = $(patsubst %.cc,%.o,$(BASE_BOJS))
+all : $(OBJECT)
+	mkdir -p $(OUT_PATH)/bin
+	mv $(OBJECT) $(OUT_PATH)/bin
+	@echo "oh, baby, success, go, go, go ..."
+	
+example : $(FORWARD) $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
-all : ${OBJECT} 	
-	rm -rf $(OUTPUT)
-	mkdir -p $(OUTPUT)
-	mkdir -p $(OUTPUT)/bin
-	cp $(OBJECT) $(OUTPUT)/bin/
-	rm -rf $(OBJECT)
-	@echo "Success, go, go, go..."
+$(FORWARD) :
+	make -C $(BASKET_PATH)/forward
 
-example : main.cc 
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
-
-$(OBJS): %.o : %.cc
-	$(CXX) $(CXXFLAGS) -c $< -o $@ $(INCLUDE_PATH) ${LIB_PATH} ${LIBS}
+$(OBJS) : %.o : %.cc
+	$(CXX) $(CXXFLAGS) -c $< -o $@ $(INCLUDE_PATH)
 
 clean :
-	rm -rf $(OUTPUT)
-	rm -f $(SRC_DIR)/*.o
-	rm -rf $(OBJECT)
+	rm -f $(SRC_PATH)/*.o
+	rm -rf $(OUT_PATH)
+	@echo "oh, baby, clean success..."
 
+distclean :
+	rm -f $(SRC_PATH)/*.o
+	rm -rf $(OUT_PATH)
+	make -C $(BASKET_PATH)/forward clean
+	@echo "oh, baby, distclean success..."

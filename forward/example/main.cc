@@ -17,6 +17,7 @@ class MyConn : public forward::ForwardConn {
   }
 
   int GetRequest() override {
+    ForwardConn::setHeart_beat_(5);
     char buf[1024];
     auto ret = read(getFd_(), buf, sizeof(buf) / sizeof(buf[0]));
     if (ret < 0) {

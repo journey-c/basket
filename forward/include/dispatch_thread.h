@@ -18,7 +18,6 @@ class DispatchThread {
                  forward::ConnFactory *conn_factory);
   virtual ~DispatchThread();
 
-  void setHeart_beat_s_(int heart_beat_ms_);
   void Start();
   void Quit();
 

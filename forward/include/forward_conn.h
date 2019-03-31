@@ -31,6 +31,12 @@ class ForwardConn {
   WorkThread *getThread_() const {
     return thread_;
   }
+  void setHeart_beat_(const int heart_beat) {
+    heart_beat_ = heart_beat;
+  } 
+  int32_t getHeart_beat_() const {
+    return heart_beat_;
+  }
   bool isIs_reply_() const {
     return is_reply_;
   }
@@ -44,6 +50,7 @@ class ForwardConn {
   int fd_;
   std::string remote_ip_;
   int16_t remote_port_;
+  int32_t heart_beat_;
   bool is_reply_;
   /*
    * Which thread this connection belongs to

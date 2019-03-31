@@ -17,6 +17,7 @@ ForwardConn::ForwardConn(int fd_,
     : fd_(fd_),
       remote_ip_(remote_ip_),
       remote_port_(remote_port_),
+      heart_beat_(DEF_HEART_BEAT),
       is_reply_(false),
       thread_(thread_) {
 }

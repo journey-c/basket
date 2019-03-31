@@ -30,9 +30,6 @@ class WorkThread {
   void setThread_name(const std::string &thread_name) {
     WorkThread::thread_name = thread_name;
   }
-  void setHeart_beat_s_(int heart_beat_ms_) {
-    WorkThread::heart_beat_s_ = heart_beat_s_;
-  }
   void setConn_factory_(ConnFactory *conn_factory_) {
     WorkThread::conn_factory_ = conn_factory_;
   }
@@ -49,7 +46,7 @@ class WorkThread {
   std::string thread_name;
   std::thread::id thread_id_;
   int clean_interval_;
-  int heart_beat_s_;
+  int time_wheel_size_;
   int time_wheel_scale_;
   std::map<int, std::weak_ptr<forward::ForwardConn>> fd_connector_map_;
   std::vector<std::vector<std::shared_ptr<forward::ForwardConn>>> time_wheel_;

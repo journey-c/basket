@@ -3,9 +3,9 @@
 //
 
 #include <sys/epoll.h>
+#include <sys/time.h>
 #include <unistd.h>
 #include <iostream>
-#include <sys/time.h>
 
 #include "forward/include/work_thread.h"
 
@@ -14,9 +14,9 @@ namespace forward {
 WorkThread::WorkThread(ConnFactory *conn_factory)
     : thread_id_(0),
       clean_interval_(DEF_CLEAN_INTERVAL),
-      heart_beat_s_(DEF_HEART_BEAT),
+      time_wheel_size_(DEF_TIME_WHEEL_SIZE),
       time_wheel_scale_(0),
-      time_wheel_(static_cast<unsigned long>(heart_beat_s_)),
+      time_wheel_(static_cast<unsigned long>(time_wheel_size_)),
       quit_(true),
       ep_ptr_(new Epoll(FORWARD_MAX_CLIENTS_NUM)),
       thread_ptr_(nullptr),
@@ -45,18 +45,19 @@ void WorkThread::ThreadMain() {
 
   while (!quit_) {
     gettimeofday(&now, nullptr);
-    if (when.tv_sec > now.tv_sec || (when.tv_sec == now.tv_sec && when.tv_usec > now.tv_usec)) {
-      time_out_ms = static_cast<int>((when.tv_sec - now.tv_sec) * 1000 + (when.tv_usec - now.tv_usec) / 1000);
+    if (when.tv_sec > now.tv_sec ||
+        (when.tv_sec == now.tv_sec && when.tv_usec > now.tv_usec)) {
+      time_out_ms = static_cast<int>((when.tv_sec - now.tv_sec) * 1000 +
+                                     (when.tv_usec - now.tv_usec) / 1000);
     } else {
       CleanUpExpiredConnection();
-      time_wheel_scale_ = (time_wheel_scale_ + 1) % heart_beat_s_;
+      time_wheel_scale_ = (time_wheel_scale_ + 1) % time_wheel_size_;
       when.tv_sec = now.tv_sec + (clean_interval_ / 1000);
-      when.tv_usec =
-          now.tv_usec + ((clean_interval_ % 1000) * 1000);
+      when.tv_usec = now.tv_usec + ((clean_interval_ % 1000) * 1000);
       time_out_ms = clean_interval_;
     }
 
-    std::vector<std::pair<int, uint32_t >> read_list;
+    std::vector<std::pair<int, uint32_t>> read_list;
     ret = ep_ptr_->Wait(&read_list, time_out_ms);
     if (ret != 0) {
       log_err("epoll wait error");
@@ -70,12 +71,19 @@ void WorkThread::ThreadMain() {
         close(fd);
       } else if (events & EPOLLIN) {
         if (fd_connector_map_[fd].lock()) {
-          time_wheel_[time_wheel_scale_].push_back(fd_connector_map_[fd].lock());
           ret = fd_connector_map_[fd].lock()->GetRequest();
           if (ret) {
             DelConn(fd);
             log_warn("message error");
           }
+          int32_t hb = fd_connector_map_[fd].lock()->getHeart_beat_();
+          /*
+           * The heartbeat strategy:
+           * if the client uploads the heartbeat time, it uses the client's,
+           * otherwise it uses the default.
+           */
+          time_wheel_[(time_wheel_scale_ + hb) % time_wheel_size_].push_back(
+              fd_connector_map_[fd].lock());
           if (fd_connector_map_[fd].lock()->isIs_reply_()) {
             fd_connector_map_[fd].lock()->SendReply();
           }
@@ -93,7 +101,7 @@ int WorkThread::DelConn(const int &conn_fd) {
 }
 
 void WorkThread::CleanUpExpiredConnection() {
-  time_wheel_[(time_wheel_scale_ + 1) % heart_beat_s_].clear();
+  time_wheel_[(time_wheel_scale_ + 1) % time_wheel_size_].clear();
 }
 
 void WorkThread::Start() {
@@ -106,13 +114,11 @@ void WorkThread::Quit() {
   quit_.store(true);
 }
 
-int WorkThread::AcceptWork(const int work_fd_, const int events, const std::string &ip, const int16_t port) {
+int WorkThread::AcceptWork(const int work_fd_, const int events,
+                           const std::string &ip, const int16_t port) {
   if (WorkThread::conn_factory_ != nullptr) {
-    auto
-        tmp = std::shared_ptr<forward::ForwardConn>(conn_factory_->NewConn(work_fd_,
-                                                                           ip,
-                                                                           port,
-                                                                           this));
+    auto tmp = std::shared_ptr<forward::ForwardConn>(
+        conn_factory_->NewConn(work_fd_, ip, port, this));
     fd_connector_map_[work_fd_] = tmp;
     time_wheel_[time_wheel_scale_].push_back(tmp);
     return ep_ptr_->AddEvent(work_fd_, events);
@@ -121,5 +127,4 @@ int WorkThread::AcceptWork(const int work_fd_, const int events, const std::stri
     return -1;
   }
 }
-
 };
