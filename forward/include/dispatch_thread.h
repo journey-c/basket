@@ -1,5 +1,5 @@
-#ifndef BASKET_FORWARD_DISPATCH_THREAD_H_
-#define BASKET_FORWARD_DISPATCH_THREAD_H_
+#ifndef FORWARD_INCLUDE_DISPATCH_THREAD_H_
+#define FORWARD_INCLUDE_DISPATCH_THREAD_H_
 
 #include "forward/include/work_thread.h"
 #include "forward/include/forward_socket.h"
@@ -45,4 +45,4 @@ class DispatchThread {
 
 };
 
-#endif // BASKET_FORWARD_DISPATCH_THREAD_H_
+#endif // FORWARD_INCLUDE_DISPATCH_THREAD_H_

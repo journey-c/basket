@@ -1,8 +1,3 @@
-//
-// Created by lvcheng1 on 19-3-12.
-//
-
-#include <iostream>
 #include <unistd.h>
 
 #include "forward/include/forward_tools.h"

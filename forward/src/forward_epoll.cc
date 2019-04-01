@@ -2,7 +2,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
-#include <iostream>
 
 #include "forward/include/forward_epoll.h"
 #include "forward/include/forward_define.h"

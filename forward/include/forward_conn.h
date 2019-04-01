@@ -1,9 +1,5 @@
-//
-// Created by lvcheng1 on 19-3-12.
-//
-
-#ifndef BASKET_FORWARD_FORWARD_CONN_H
-#define BASKET_FORWARD_FORWARD_CONN_H
+#ifndef FORWARD_INCLUDE_FORWARD_CONN_H_
+#define FORWARD_INCLUDE_FORWARD_CONN_H_
 
 #include <string>
 
@@ -72,4 +68,4 @@ class ConnFactory {
 };
 }
 
-#endif // BASKET_FORWARD_FORWARD_CONN_H
+#endif // FORWARD_INCLUDE_FORWARD_CONN_H_

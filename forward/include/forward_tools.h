@@ -1,9 +1,7 @@
-//
-// Created by lvcheng1 on 19-3-5.
-//
+#ifndef FORWARD_INCLUDE_FORWARD_TOOLS_H_
+#define FORWARD_INCLUDE_FORWARD_TOOLS_H_
 
-#ifndef ALLEN_IVERSON_LOCKER_ROOM_TOOLS_H
-#define ALLEN_IVERSON_LOCKER_ROOM_TOOLS_H
+#include <stdint.h>
 
 namespace forward {
 
@@ -13,4 +11,4 @@ extern int SetNonBlocking(int sock_fd);
 
 }
 
-#endif //ALLEN_IVERSON_LOCKER_ROOM_TOOLS_H
+#endif // FORWARD_INCLUDE_FORWARD_TOOLS_H_

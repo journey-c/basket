@@ -1,11 +1,6 @@
-//
-// Created by lvcheng1 on 19-2-24.
-//
-
 #include <sys/epoll.h>
 #include <sys/time.h>
 #include <unistd.h>
-#include <iostream>
 
 #include "forward/include/work_thread.h"
 

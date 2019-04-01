@@ -1,11 +1,8 @@
-//
-// Created by lvcheng1 on 19-3-5.
-//
-
 #include <sys/param.h>
 #include <fstream>
 #include <fcntl.h>
 #include <unistd.h>
+#include <stdint.h>
 
 #include "forward/include/forward_tools.h"
 

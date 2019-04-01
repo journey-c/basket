@@ -1,9 +1,5 @@
-//
-// Created by lvcheng1 on 19-2-24.
-//
-
-#ifndef BASKET_FORWARD_WORK_THREAD_H
-#define BASKET_FORWARD_WORK_THREAD_H
+#ifndef FORWARD_INCLUDE_WORK_THREAD_H_
+#define FORWARD_INCLUDE_WORK_THREAD_H_
 
 #include <map>
 #include <thread>
@@ -64,4 +60,4 @@ class WorkThread {
 
 };
 
-#endif //SNAPPY_SERVER_WORK_THREAD_H
+#endif // FORWARD_INCLUDE_WORK_THREAD_H_

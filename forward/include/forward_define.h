@@ -1,9 +1,5 @@
-//
-// Created by lvcheng1 on 19-2-24.
-//
-
-#ifndef BASKET_FORWARD_FORWARD_DEFINE_H
-#define BASKET_FORWARD_FORWARD_DEFINE_H
+#ifndef FORWARD_INCLUDE_FORWARD_DEFINE_H_
+#define FORWARD_INCLUDE_FORWARD_DEFINE_H_
 
 #include <string.h>
 
@@ -36,4 +32,4 @@ namespace forward {
 };
 
 
-#endif // BASKET_FORWARD_FORWARD_DEFINE_H
+#endif // FORWARD_INCLUDE_FORWARD_DEFINE_H_
