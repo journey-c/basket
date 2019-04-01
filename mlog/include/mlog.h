@@ -1,5 +1,5 @@
-#ifndef BASKET_INCLUDE_MLOD_H_
-#define BASKET_INCLUDE_MLOD_H_
+#ifndef MLOG_INCLUDE_MLOD_H_
+#define MLOG_INCLUDE_MLOD_H_
 
 #include <sys/types.h>
 
@@ -56,4 +56,4 @@ int32_t Write(const LogLevel level, const std::initializer_list<std::string> &ms
 
 } // namespace mlog
 
-#endif // BASKET_INCLUDE_MLOD_H_
+#endif // MLOG_INCLUDE_MLOD_H_

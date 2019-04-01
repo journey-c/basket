@@ -1,5 +1,5 @@
-#ifndef BASKET_INCLUDE_MLOG_DEFINE_H_
-#define BASKET_INCLUDE_MLOG_DEFINE_H_
+#ifndef MLOG_INCLUDE_MLOG_DEFINE_H_
+#define MLOG_INCLUDE_MLOG_DEFINE_H_
 
 namespace mlog {
 
@@ -8,4 +8,4 @@ namespace mlog {
 
 } // namespace mlog
 
-#endif // BASKET_INCLUDE_MLOG_DEFINE_H
+#endif // MLOG_INCLUDE_MLOG_DEFINE_H_
