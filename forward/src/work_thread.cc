@@ -61,7 +61,6 @@ void WorkThread::ThreadMain() {
       int fd = item.first;
       uint32_t events = item.second;
       if (events & EPOLLERR || events & EPOLLHUP) {
-        ep_ptr_->DelEvent(fd);
         DelConn(fd);
         close(fd);
       } else if (events & EPOLLIN) {
@@ -69,7 +68,8 @@ void WorkThread::ThreadMain() {
           ret = fd_connector_map_[fd].lock()->GetRequest();
           if (ret) {
             DelConn(fd);
-            log_warn("message error");
+            close(fd);
+            log_warn("GetRequest error");
           }
           int32_t hb = fd_connector_map_[fd].lock()->getHeart_beat_();
           /*
@@ -80,7 +80,14 @@ void WorkThread::ThreadMain() {
           time_wheel_[(time_wheel_scale_ + hb) % time_wheel_size_].push_back(
               fd_connector_map_[fd].lock());
           if (fd_connector_map_[fd].lock()->isIs_reply_()) {
-            fd_connector_map_[fd].lock()->SendReply();
+            if (events & EPOLLOUT) {
+              ret = fd_connector_map_[fd].lock()->SendReply();
+              if (ret) {
+                DelConn(fd);
+                close(fd);
+                log_warn("SendReply error");
+              }
+            }
           }
         } else {
           log_warn("expire");

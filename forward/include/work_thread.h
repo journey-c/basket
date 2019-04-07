@@ -1,14 +1,14 @@
 #ifndef FORWARD_INCLUDE_WORK_THREAD_H_
 #define FORWARD_INCLUDE_WORK_THREAD_H_
 
-#include <map>
-#include <thread>
 #include <atomic>
 #include <functional>
+#include <map>
+#include <thread>
 
-#include "forward/include/forward_epoll.h"
-#include "forward/include/forward_define.h"
 #include "forward/include/forward_conn.h"
+#include "forward/include/forward_define.h"
+#include "forward/include/forward_epoll.h"
 
 namespace forward {
 
@@ -30,7 +30,8 @@ class WorkThread {
     WorkThread::conn_factory_ = conn_factory_;
   }
 
-  int AcceptWork(const int work_fd_, const int events, const std::string &ip, const int16_t port);
+  int AcceptWork(const int work_fd_, const int events, const std::string &ip,
+                 const int16_t port);
   int DelConn(const int &conf_fd);
   void CleanUpExpiredConnection();
   void Start();
@@ -51,13 +52,12 @@ class WorkThread {
   std::thread *thread_ptr_;
 
   ConnFactory *conn_factory_;
-/*
- * not copy and copy assign
- */
+  /*
+   * not copy and copy assign
+   */
   WorkThread(const WorkThread &);
   void operator=(const WorkThread &);
 };
-
 };
 
-#endif // FORWARD_INCLUDE_WORK_THREAD_H_
+#endif  // FORWARD_INCLUDE_WORK_THREAD_H_

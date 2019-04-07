@@ -9,7 +9,7 @@ namespace forward {
 #define DEF_PROTOCOL 0
 #define BACKLOG 5
 
-#define DEF_TIME_WHEEL_SIZE 5
+#define DEF_TIME_WHEEL_SIZE 65536
 #define DEF_HEART_BEAT 600
 #define DEF_CLEAN_INTERVAL 1000
 #define DEF_MAX_MSG_LEN 2048
@@ -28,6 +28,14 @@ namespace forward {
 }
 #define log_warn(M, ...) fprintf(stderr, "[WARN] (%s:%d: errno: %s) " M "\n", __FILE__, __LINE__, clean_errno(), ##__VA_ARGS__)
 #define log_info(M, ...) fprintf(stderr, "[INFO] (%s:%d) " M "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+
+enum ReadStatus {
+  kOk = 0,
+  kReadHalf = 1,
+  kReadAll = 2,
+  kReadErr = 3,
+  kReadClose = 4,
+};
 
 };
 
