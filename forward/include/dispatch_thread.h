@@ -17,7 +17,7 @@ class DispatchThread {
                  const int &work_num,
                  forward::ConnFactory *conn_factory);
   virtual ~DispatchThread();
-
+  void HandlingNewConnection(int conn_fd, std::string ip, int16_t port);
   void Start();
   void Quit();
 

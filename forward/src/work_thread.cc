@@ -16,6 +16,20 @@ WorkThread::WorkThread(ConnFactory *conn_factory)
       ep_ptr_(new Epoll(FORWARD_MAX_CLIENTS_NUM)),
       thread_ptr_(nullptr),
       conn_factory_(conn_factory) {
+  int fds[2];
+  /*
+   * close-on-exec and sync
+   */
+  if (pipe2(fds, O_CLOEXEC | O_SYNC)) {
+    log_err("create pipe failed");
+    exit(-1);
+  }
+  notify_receive_fd_ = fds[0];
+  notify_send_fd_ = fds[1];
+  if (ep_ptr_->AddEvent(notify_receive_fd_, EPOLLIN | EPOLLERR | EPOLLHUP)) {
+    log_err("add notify fd failed");
+    exit(-1);
+  }
 }
 
 WorkThread::~WorkThread() {
@@ -30,6 +44,7 @@ void WorkThread::ThreadMain() {
   struct timeval when = {0};
   gettimeofday(&when, nullptr);
   struct timeval now = when;
+  ConnNotify cn;
 
   when.tv_sec += (clean_interval_ / 1000);
   when.tv_usec += ((clean_interval_ % 1000) * 1000);
@@ -60,6 +75,35 @@ void WorkThread::ThreadMain() {
     for (auto &item : read_list) {
       int fd = item.first;
       uint32_t events = item.second;
+      if (fd == notify_receive_fd_) { // new connection
+        if (events & EPOLLIN) {
+          char tmp[2048];
+          int32_t num_of_new_conn = read(notify_receive_fd_, tmp, 2048);
+          if (num_of_new_conn <= 0) {
+            continue;
+          }
+          for (int32_t idx = 0; idx != num_of_new_conn; ++idx) {
+            {
+              std::lock_guard<std::mutex> guard(conn_queue_mutex);
+              cn = conn_queue_.front();
+              conn_queue_.pop();
+            }
+            
+            /*
+             * I didn’t think how to achieve it.
+             */
+            auto tmp = std::shared_ptr<forward::ForwardConn>(conn_factory_->NewConn(cn., cn.ip, cn.port, this));
+            fd_connector_map_[work_fd_] = tmp;
+            time_wheel_[time_wheel_scale_].push_back(tmp);
+
+            ep_ptr_->AddEvent(cn.fd, EPOLLIN);
+          }
+        } else {
+          continue;
+        } 
+      } else {
+
+      }
       if (events & EPOLLERR || events & EPOLLHUP) {
         DelConn(fd);
         close(fd);

@@ -1,9 +1,9 @@
+#include <arpa/inet.h>
+#include <fcntl.h>
+#include <netinet/in.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <arpa/inet.h>
 
 #include "forward/include/dispatch_thread.h"
 
@@ -24,8 +24,7 @@ static int SetNonBlock(int sockfd) {
   return flags;
 }
 
-DispatchThread::DispatchThread(const std::string &ip,
-                               const int &port,
+DispatchThread::DispatchThread(const std::string &ip, const int &port,
                                const int &work_num,
                                forward::ConnFactory *conn_factory)
     : ip_(ip),
@@ -53,6 +52,21 @@ DispatchThread::~DispatchThread() {
   delete (socket_ptr_);
   delete (epoll_ptr_);
   delete (thread_ptr_);
+}
+
+void DispatchThread::HandlingNewConnections(int conn_fd, std::string ip,
+                                            int16_t port) {
+  std::queue<WorkThread::ConnNotify> *q =
+      &(work_threads_[distribution_pointer_]->conn_queue_);
+  WorkThread::ConnNotify tmp_notify = WorkThread::ConnNotify{conn_fd, ip, port};
+  {
+    std::lock_guard<std::mutex> guard(
+        work_threads_[distribution_pointer_]->conn_queue_mutex);
+    q->push(tmp_notify);
+  }
+  write(worker_thread_[distribution_pointer_]->getNotify_send_fd(), "", 1);
+  distribution_pointer_++;
+  distribution_pointer_ %= work_num_;
 }
 
 void DispatchThread::ThreadMain() {
@@ -86,17 +100,13 @@ void DispatchThread::ThreadMain() {
         log_err("Epoll has error\n");
       } else if (fd == listen_fd_) {
         if (events & EPOLLIN) {
-          int accept_fd = accept(fd, (struct sockaddr *) &client_addr, &client_len);
+          int accept_fd =
+              accept(fd, (struct sockaddr *)&client_addr, &client_len);
           SetNonBlock(accept_fd);
           std::string ip(inet_ntoa(client_addr.sin_addr));
           int16_t port = ntohs(client_addr.sin_port);
 
-          int ret = work_threads_[distribution_pointer_++]->AcceptWork(accept_fd, EPOLLIN, ip, port);
-          if (ret) {
-            log_warn("accept_work error");
-            continue;
-          }
-          distribution_pointer_ %= work_num_;
+          HandlingNewConnection(fd, ip, port);
         }
       }
     }
@@ -112,5 +122,4 @@ void DispatchThread::Quit() {
   quit_.store(true);
   thread_ptr_->join();
 }
-
 };
