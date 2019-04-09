@@ -9,8 +9,7 @@ class MyConn : public forward::ForwardConn {
  public:
   explicit MyConn(int fd, const std::string &remote_ip, int16_t remote_port,
                   forward::WorkThread *thread)
-      : ForwardConn(fd, remote_ip, remote_port, thread),
-        msg("") {
+      : ForwardConn(fd, remote_ip, remote_port, thread), msg("") {
   }
   ~MyConn() override {
     std::cout << "Myconn" << std::endl;
@@ -44,21 +43,17 @@ class MyConn : public forward::ForwardConn {
 
 class MyConnFactory : public forward::ConnFactory {
  public:
-  forward::ForwardConn *NewConn(const int fd_,
-                                const std::string &remote_ip_,
+  forward::ForwardConn *NewConn(const int fd_, const std::string &remote_ip_,
                                 int16_t remote_port_,
                                 forward::WorkThread *thread_) const override {
     return new MyConn(fd_, remote_ip_, remote_port_, thread_);
   }
 };
 
-
 int main() {
   auto *mf = new MyConnFactory();
-  forward::DispatchThread *dt = new forward::DispatchThread("0.0.0.0",
-                                                            8080,
-                                                            1,
-                                                            mf);
+  forward::DispatchThread *dt =
+      new forward::DispatchThread("0.0.0.0", 8080, 1, mf);
   dt->Start();
   for (;;) {
   }

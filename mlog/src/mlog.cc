@@ -6,7 +6,6 @@
 #include <cstdarg>
 #include <string.h>
 
-#include <iostream>
 #include <string>
 
 #include "mlog/include/mlog.h"

@@ -1,7 +1,9 @@
+#include <fcntl.h>
 #include <sys/epoll.h>
 #include <sys/time.h>
 #include <unistd.h>
 
+#include "forward/include/forward_tools.h"
 #include "forward/include/work_thread.h"
 
 namespace forward {
@@ -20,13 +22,13 @@ WorkThread::WorkThread(ConnFactory *conn_factory)
   /*
    * close-on-exec and sync
    */
-  if (pipe2(fds, O_CLOEXEC | O_SYNC)) {
+  if (pipe(fds)) {
     log_err("create pipe failed");
     exit(-1);
   }
   notify_receive_fd_ = fds[0];
   notify_send_fd_ = fds[1];
-  if (ep_ptr_->AddEvent(notify_receive_fd_, EPOLLIN | EPOLLERR | EPOLLHUP)) {
+  if (ep_ptr_->AddEvent(notify_receive_fd_, EPOLLIN | EPOLLERR | EPOLLHUP) == -1) {
     log_err("add notify fd failed");
     exit(-1);
   }
@@ -35,6 +37,8 @@ WorkThread::WorkThread(ConnFactory *conn_factory)
 WorkThread::~WorkThread() {
   Quit();
   thread_ptr_->join();
+  close(notify_send_fd_);
+  close(notify_receive_fd_);
   delete (ep_ptr_);
   delete (thread_ptr_);
 }
@@ -75,7 +79,7 @@ void WorkThread::ThreadMain() {
     for (auto &item : read_list) {
       int fd = item.first;
       uint32_t events = item.second;
-      if (fd == notify_receive_fd_) { // new connection
+      if (fd == notify_receive_fd_) {  // new connection
         if (events & EPOLLIN) {
           char tmp[2048];
           int32_t num_of_new_conn = read(notify_receive_fd_, tmp, 2048);
@@ -88,53 +92,90 @@ void WorkThread::ThreadMain() {
               cn = conn_queue_.front();
               conn_queue_.pop();
             }
-            
-            /*
-             * I didn’t think how to achieve it.
-             */
-            auto tmp = std::shared_ptr<forward::ForwardConn>(conn_factory_->NewConn(cn., cn.ip, cn.port, this));
-            fd_connector_map_[work_fd_] = tmp;
-            time_wheel_[time_wheel_scale_].push_back(tmp);
+            auto tmp = std::shared_ptr<forward::ForwardConn>(
+                conn_factory_->NewConn(cn.conn_fd_, cn.ip_, cn.port_, this));
 
-            ep_ptr_->AddEvent(cn.fd, EPOLLIN);
-          }
-        } else {
-          continue;
-        } 
-      } else {
+            fd_connector_map_[cn.conn_fd_] = tmp;
+            time_wheel_[time_wheel_scale_].insert(
+                std::make_pair(cn.conn_fd_, tmp));
+            fd_connector_map_[cn.conn_fd_].lock()->setLast_active_time_(
+                GetNowMillis());
+            fd_connector_map_[cn.conn_fd_]
+                .lock()
+                ->setLast_time_wheel_scale_(time_wheel_scale_);
 
-      }
-      if (events & EPOLLERR || events & EPOLLHUP) {
-        DelConn(fd);
-        close(fd);
-      } else if (events & EPOLLIN) {
-        if (fd_connector_map_[fd].lock()) {
-          ret = fd_connector_map_[fd].lock()->GetRequest();
-          if (ret) {
-            DelConn(fd);
-            close(fd);
-            log_warn("GetRequest error");
-          }
-          int32_t hb = fd_connector_map_[fd].lock()->getHeart_beat_();
-          /*
-           * The heartbeat strategy:
-           * if the client uploads the heartbeat time, it uses the client's,
-           * otherwise it uses the default.
-           */
-          time_wheel_[(time_wheel_scale_ + hb) % time_wheel_size_].push_back(
-              fd_connector_map_[fd].lock());
-          if (fd_connector_map_[fd].lock()->isIs_reply_()) {
-            if (events & EPOLLOUT) {
-              ret = fd_connector_map_[fd].lock()->SendReply();
-              if (ret) {
-                DelConn(fd);
-                close(fd);
-                log_warn("SendReply error");
-              }
+            if (ep_ptr_->AddEvent(cn.conn_fd_, EPOLLIN) == -1) {
+              log_err("AddEvent error");
+              continue;
             }
           }
-        } else {
-          log_warn("expire");
+        }
+      } else {
+        if (events & EPOLLERR || events & EPOLLHUP) {
+          if (DelConn(fd) == -1 || close(fd) == -1) {
+            log_err("disconnect error");
+            continue;
+          }
+        } else if (events & EPOLLIN) {
+          if (fd_connector_map_[fd].lock()) {
+            ret = fd_connector_map_[fd].lock()->GetRequest();
+            if (ret) {
+              if (DelConn(fd) == -1 || close(fd) == -1) {
+                log_err("disconnect error GetRequest");
+                continue;
+              }
+              log_warn("GetRequest error");
+              continue;
+            }
+            if (fd_connector_map_[fd].lock()->isIs_reply_()) {
+              if (ep_ptr_->ModEvent(fd, EPOLLIN, EPOLLOUT) == -1) {
+                if (DelConn(fd) == -1 || close(fd) == -1) {
+                  log_err("disconnect error to EPOLLOUT");
+                }
+                log_warn("ModEvent error to EPOLLOUT");
+                continue;
+              }     
+            }
+            int32_t hb = fd_connector_map_[fd].lock()->getHeart_beat_();
+            /*
+             * The heartbeat strategy:
+             * if the client uploads the heartbeat time, it uses the client's,
+             * otherwise it uses the default.
+             */
+            time_wheel_[(time_wheel_scale_ + hb) % time_wheel_size_].insert(
+                std::make_pair(fd_connector_map_[fd].lock()->getFd_(),
+                               fd_connector_map_[fd].lock()));
+            /*
+             * Remove the previous pointer inserted in the time wheel to save
+             * memory
+             */
+            time_wheel_
+                [fd_connector_map_[fd].lock()->getLast_time_wheel_scale_()]
+                    .erase(fd_connector_map_[fd].lock()->getFd_());
+
+            fd_connector_map_[fd].lock()->setLast_active_time_(GetNowMillis());
+            fd_connector_map_[fd].lock()->setLast_time_wheel_scale_(
+                time_wheel_scale_);
+          } else {
+            log_warn("expire");
+          }
+        }
+        if (fd_connector_map_[fd].lock()->isIs_reply_()) {
+          if (events & EPOLLOUT) { 
+            ret = fd_connector_map_[fd].lock()->SendReply();
+            if (ret) {
+              if (DelConn(fd) == -1 || close(fd) == -1) {
+                 log_err("disconnect error reply");
+               }
+              log_warn("SendReply error");
+            }
+            if (ep_ptr_->ModEvent(fd, 0, EPOLLIN) == -1) {
+              DelConn(fd);
+              close(fd);
+              log_warn("ModEvent error to EPOLLIN");  
+              continue;
+            }
+          }
         }
       }
     }
@@ -158,19 +199,5 @@ void WorkThread::Start() {
 
 void WorkThread::Quit() {
   quit_.store(true);
-}
-
-int WorkThread::AcceptWork(const int work_fd_, const int events,
-                           const std::string &ip, const int16_t port) {
-  if (WorkThread::conn_factory_ != nullptr) {
-    auto tmp = std::shared_ptr<forward::ForwardConn>(
-        conn_factory_->NewConn(work_fd_, ip, port, this));
-    fd_connector_map_[work_fd_] = tmp;
-    time_wheel_[time_wheel_scale_].push_back(tmp);
-    return ep_ptr_->AddEvent(work_fd_, events);
-  } else {
-    log_warn("conn factory is null");
-    return -1;
-  }
 }
 };

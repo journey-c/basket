@@ -8,6 +8,7 @@ namespace forward {
 extern int32_t GetCpuNum();
 extern int64_t GetRemaining_length(const char *buf);
 extern int SetNonBlocking(int sock_fd);
+extern uint64_t GetNowMillis();
 
 }
 

@@ -3,8 +3,10 @@
 
 #include <atomic>
 #include <functional>
-#include <map>
 #include <thread>
+#include <mutex>
+#include <map>
+#include <queue>
 
 #include "forward/include/forward_conn.h"
 #include "forward/include/forward_define.h"
@@ -18,7 +20,7 @@ class ConnFactory;
 struct ConnNotify {
   int conn_fd_;
   std::string ip_;
-  int16_t port;
+  uint16_t port_;
 };
 
 class WorkThread {
@@ -35,17 +37,15 @@ class WorkThread {
   void setConn_factory_(ConnFactory *conn_factory_) {
     WorkThread::conn_factory_ = conn_factory_;
   }
-  
-  
-  int AcceptWork(const int work_fd_, const int events, const std::string &ip,
-                 const int16_t port);
+
   int DelConn(const int &conf_fd);
   void CleanUpExpiredConnection();
   void Start();
   void Quit();
 
   /*
-   * conn queue is used to receive the connection allocated by the  dispatcher thread
+   * conn queue is used to receive the connection allocated by the  dispatcher
+   * thread
    */
 
   std::mutex conn_queue_mutex;
@@ -57,6 +57,7 @@ class WorkThread {
   int getNotify_receive_fd_() {
     return notify_receive_fd_;
   }
+
  private:
   void ThreadMain();
 
@@ -66,7 +67,7 @@ class WorkThread {
   int time_wheel_size_;
   int time_wheel_scale_;
   std::map<int, std::weak_ptr<forward::ForwardConn>> fd_connector_map_;
-  std::vector<std::vector<std::shared_ptr<forward::ForwardConn>>> time_wheel_;
+  std::vector<std::map<int, std::shared_ptr<forward::ForwardConn>>> time_wheel_;
   std::atomic<bool> quit_;
 
   /*
@@ -74,8 +75,7 @@ class WorkThread {
    */
   int notify_send_fd_;
   int notify_receive_fd_;
-    
-  
+
   Epoll *ep_ptr_;
   std::thread *thread_ptr_;
 
