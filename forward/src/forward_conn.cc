@@ -1,14 +1,11 @@
 #include <unistd.h>
 
-#include "forward/include/forward_tools.h"
 #include "forward/include/forward_conn.h"
+#include "forward/include/forward_tools.h"
 
 namespace forward {
 
-ForwardConn::ForwardConn(int fd_,
-                         const std::string &remote_ip_,
-                         int16_t remote_port_,
-                         WorkThread *thread_)
+ForwardConn::ForwardConn(int fd_, const std::string &remote_ip_, int16_t remote_port_, WorkThread *thread_)
     : fd_(fd_),
       remote_ip_(remote_ip_),
       remote_port_(remote_port_),
@@ -31,6 +28,5 @@ ForwardConn::~ForwardConn() {
 bool ForwardConn::SetNoBlock() {
   return SetNonBlocking(fd_) == -1;
 }
-
 }
 

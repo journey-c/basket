@@ -5,14 +5,12 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "forward/include/forward_tools.h"
 #include "forward/include/dispatch_thread.h"
+#include "forward/include/forward_tools.h"
 
 namespace forward {
 
-DispatchThread::DispatchThread(const std::string &ip, const int &port,
-                               const int &work_num,
-                               forward::ConnFactory *conn_factory)
+DispatchThread::DispatchThread(const std::string &ip, const int &port, const int &work_num, forward::ConnFactory *conn_factory)
     : ip_(ip),
       port_(port),
       work_num_(work_num),
@@ -40,21 +38,17 @@ DispatchThread::~DispatchThread() {
   delete (thread_ptr_);
 }
 
-int DispatchThread::HandlingNewConnection(int conn_fd, std::string ip,
-                                           uint16_t port) {
-  std::queue<ConnNotify> *q =
-      &(work_threads_[distribution_pointer_]->conn_queue_);
+int DispatchThread::HandlingNewConnection(int conn_fd, std::string ip, uint16_t port) {
+  std::queue<ConnNotify> *q = &(work_threads_[distribution_pointer_]->conn_queue_);
   ConnNotify tmp_notify = ConnNotify{conn_fd, ip, port};
   {
-    std::lock_guard<std::mutex> guard(
-        work_threads_[distribution_pointer_]->conn_queue_mutex);
+    std::lock_guard<std::mutex> guard(work_threads_[distribution_pointer_]->conn_queue_mutex);
     q->push(tmp_notify);
   }
   auto ret = write(work_threads_[distribution_pointer_]->getNotify_send_fd_(), "", 1);
   distribution_pointer_++;
   distribution_pointer_ %= work_num_;
-  if (ret == -1)
-    return -1;
+  if (ret == -1) return -1;
   return 0;
 }
 
@@ -89,8 +83,7 @@ void DispatchThread::ThreadMain() {
         log_err("Epoll has error\n");
       } else if (fd == listen_fd_) {
         if (events & EPOLLIN) {
-          int accept_fd =
-              accept(fd, (struct sockaddr *)&client_addr, &client_len);
+          int accept_fd = accept(fd, (struct sockaddr *)&client_addr, &client_len);
           SetNonBlocking(accept_fd);
           std::string ip(inet_ntoa(client_addr.sin_addr));
           uint16_t port = ntohs(client_addr.sin_port);

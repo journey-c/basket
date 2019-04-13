@@ -37,10 +37,12 @@ $(OBJS) : %.o : %.cc
 clean :
 	rm -f $(SRC_PATH)/*.o
 	rm -rf $(OUT_PATH)
+	rm -f core*
 	@echo "oh, baby, clean success..."
 
 distclean :
 	rm -f $(SRC_PATH)/*.o
 	rm -rf $(OUT_PATH)
+	rm -f core*
 	make -C $(BASKET_PATH)/forward clean
 	@echo "oh, baby, distclean success..."

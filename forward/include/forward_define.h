@@ -21,11 +21,11 @@ namespace forward {
 #define EPOLL_DEFINE_TIME_OUT 1000
 
 #define clean_errno() (errno == 0 ? "none" : strerror(errno))
-#define log_err(M, ...) \
-{ \
+#define log_err(M, ...)                                                                                      \
+  {                                                                                                          \
     fprintf(stderr, "[ERROR] (%s:%d: errno: %s) " M "\n", __FILE__, __LINE__, clean_errno(), ##__VA_ARGS__); \
-    exit(-1); \
-}
+    exit(-1);                                                                                                \
+  }
 #define log_warn(M, ...) fprintf(stderr, "[WARN] (%s:%d: errno: %s) " M "\n", __FILE__, __LINE__, clean_errno(), ##__VA_ARGS__)
 #define log_info(M, ...) fprintf(stderr, "[INFO] (%s:%d) " M "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 
@@ -36,8 +36,6 @@ enum ReadStatus {
   kReadErr = 3,
   kReadClose = 4,
 };
-
 };
 
-
-#endif // FORWARD_INCLUDE_FORWARD_DEFINE_H_
+#endif  // FORWARD_INCLUDE_FORWARD_DEFINE_H_

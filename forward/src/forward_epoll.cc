@@ -1,15 +1,14 @@
+#include <fcntl.h>
+#include <string.h>
 #include <sys/epoll.h>
 #include <unistd.h>
-#include <string.h>
-#include <fcntl.h>
 
-#include "forward/include/forward_epoll.h"
 #include "forward/include/forward_define.h"
+#include "forward/include/forward_epoll.h"
 
 namespace forward {
 
-Epoll::Epoll(const unsigned long &initialize_event_container_size)
-    : events_(initialize_event_container_size) {
+Epoll::Epoll(const unsigned long &initialize_event_container_size) : events_(initialize_event_container_size) {
   efd_ = epoll_create1(EPOLL_CLOEXEC);
   fcntl(efd_, F_SETFD, fcntl(efd_, F_GETFD) | FD_CLOEXEC);
 
@@ -25,7 +24,7 @@ Epoll::~Epoll() {
 int Epoll::AddEvent(const int &fd, const int &events) {
   struct epoll_event ev = {0};
   ev.data.fd = fd;
-  ev.events = static_cast<uint32_t >(events);
+  ev.events = static_cast<uint32_t>(events);
   return ::epoll_ctl(efd_, EPOLL_CTL_ADD, fd, &ev);
 }
 
@@ -35,17 +34,15 @@ int Epoll::DelEvent(const int &fd) {
   return ::epoll_ctl(efd_, EPOLL_CTL_DEL, fd, &ev);
 }
 
-int Epoll::ModEvent(const int &fd, const int &old_events,
-                    const int &new_events) {
+int Epoll::ModEvent(const int &fd, const int &old_events, const int &new_events) {
   struct epoll_event ev = {0};
   ev.data.fd = fd;
-  ev.events = static_cast<uint32_t >(old_events | new_events);
+  ev.events = static_cast<uint32_t>(old_events | new_events);
   return ::epoll_ctl(efd_, EPOLL_CTL_MOD, fd, &ev);
 }
 
 int Epoll::Wait(std::vector<std::pair<int, uint32_t>> *read_list, const int &time_out_ms) {
-  int wait_num =
-      ::epoll_wait(Epoll::efd_, events_.begin().base(), static_cast<int>(events_.size()), time_out_ms);
+  int wait_num = ::epoll_wait(Epoll::efd_, events_.begin().base(), static_cast<int>(events_.size()), time_out_ms);
   if (wait_num == -1) {
     if (errno == EINTR) {
       return 0;
@@ -62,5 +59,4 @@ int Epoll::Wait(std::vector<std::pair<int, uint32_t>> *read_list, const int &tim
   }
   return 0;
 }
-
 };

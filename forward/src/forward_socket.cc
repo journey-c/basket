@@ -8,13 +8,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "forward/include/forward_socket.h"
 #include "forward/include/forward_define.h"
+#include "forward/include/forward_socket.h"
 
 namespace forward {
 
-Socket::Socket(int port_, bool is_block_)
-    : port_(port_), is_block_(is_block_), is_listen_(false) {
+Socket::Socket(int port_, bool is_block_) : port_(port_), is_block_(is_block_), is_listen_(false) {
 }
 
 Socket::~Socket() {
@@ -27,12 +26,11 @@ int Socket::Listen(const std::string &bind_ip) {
 
   sock_fd_ = socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, DEF_PROTOCOL);
   if (sock_fd_ < kSUCCESS) {
-
     return sock_fd_;
   }
 
 #ifdef DEBUG
-//  打开 socket 端口复用, 防止测试的时候出现 Address already in use
+  //  打开 socket 端口复用, 防止测试的时候出现 Address already in use
   int on = 1;
   ret = setsockopt(sock_fd_, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
   if (-1 == ret) {
@@ -59,7 +57,7 @@ int Socket::Listen(const std::string &bind_ip) {
   }
   serverAddr.sin_port = htons(port_);
 
-  ret = bind(sock_fd_, (struct sockaddr *) &serverAddr, sizeof(serverAddr));
+  ret = bind(sock_fd_, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
   if (ret < kSUCCESS) {
     log_err("bind error");
   }
@@ -95,5 +93,4 @@ int Socket::SetNonBlock(int sockfd) {
   }
   return flags;
 }
-
 };

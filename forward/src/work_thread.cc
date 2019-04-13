@@ -2,6 +2,7 @@
 #include <sys/epoll.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <iostream>
 
 #include "forward/include/forward_tools.h"
 #include "forward/include/work_thread.h"
@@ -23,13 +24,13 @@ WorkThread::WorkThread(ConnFactory *conn_factory)
    * close-on-exec and sync
    */
   if (pipe(fds)) {
-    log_err("create pipe failed");
+    log_warn("create pipe failed");
     exit(-1);
   }
   notify_receive_fd_ = fds[0];
   notify_send_fd_ = fds[1];
   if (ep_ptr_->AddEvent(notify_receive_fd_, EPOLLIN | EPOLLERR | EPOLLHUP) == -1) {
-    log_err("add notify fd failed");
+    log_warn("add notify fd failed");
     exit(-1);
   }
 }
@@ -54,15 +55,13 @@ void WorkThread::ThreadMain() {
   when.tv_usec += ((clean_interval_ % 1000) * 1000);
   int time_out_ms = clean_interval_;
   if (time_out_ms < 0) {
-    log_err("heartbeat time is illegal");
+    log_warn("heartbeat time is illegal");
   }
 
   while (!quit_) {
     gettimeofday(&now, nullptr);
-    if (when.tv_sec > now.tv_sec ||
-        (when.tv_sec == now.tv_sec && when.tv_usec > now.tv_usec)) {
-      time_out_ms = static_cast<int>((when.tv_sec - now.tv_sec) * 1000 +
-                                     (when.tv_usec - now.tv_usec) / 1000);
+    if (when.tv_sec > now.tv_sec || (when.tv_sec == now.tv_sec && when.tv_usec > now.tv_usec)) {
+      time_out_ms = static_cast<int>((when.tv_sec - now.tv_sec) * 1000 + (when.tv_usec - now.tv_usec) / 1000);
     } else {
       CleanUpExpiredConnection();
       time_wheel_scale_ = (time_wheel_scale_ + 1) % time_wheel_size_;
@@ -74,7 +73,7 @@ void WorkThread::ThreadMain() {
     std::vector<std::pair<int, uint32_t>> read_list;
     ret = ep_ptr_->Wait(&read_list, time_out_ms);
     if (ret != 0) {
-      log_err("epoll wait error");
+      log_warn("epoll wait error");
     }
     for (auto &item : read_list) {
       int fd = item.first;
@@ -92,89 +91,60 @@ void WorkThread::ThreadMain() {
               cn = conn_queue_.front();
               conn_queue_.pop();
             }
-            auto tmp = std::shared_ptr<forward::ForwardConn>(
-                conn_factory_->NewConn(cn.conn_fd_, cn.ip_, cn.port_, this));
+            auto tmp = std::shared_ptr<forward::ForwardConn>(conn_factory_->NewConn(cn.conn_fd_, cn.ip_, cn.port_, this));
 
             fd_connector_map_[cn.conn_fd_] = tmp;
-            time_wheel_[time_wheel_scale_].insert(
-                std::make_pair(cn.conn_fd_, tmp));
-            fd_connector_map_[cn.conn_fd_].lock()->setLast_active_time_(
-                GetNowMillis());
-            fd_connector_map_[cn.conn_fd_]
-                .lock()
-                ->setLast_time_wheel_scale_(time_wheel_scale_);
+            time_wheel_[time_wheel_scale_].insert(std::make_pair(cn.conn_fd_, tmp));
+            fd_connector_map_[cn.conn_fd_].lock()->setLast_active_time_(GetNowMillis());
+            fd_connector_map_[cn.conn_fd_].lock()->setLast_time_wheel_scale_(time_wheel_scale_);
 
             if (ep_ptr_->AddEvent(cn.conn_fd_, EPOLLIN) == -1) {
-              log_err("AddEvent error");
+              log_warn("AddEvent error");
               continue;
             }
           }
         }
       } else {
         if (events & EPOLLERR || events & EPOLLHUP) {
-          if (DelConn(fd) == -1 || close(fd) == -1) {
-            log_err("disconnect error");
-            continue;
+          int ret = fd_connector_map_[fd].lock()->ClearUp("The client is disconnected abnormally");
+          if (ret) {
+            log_warn("ClearUp error");
           }
+          time_wheel_[fd_connector_map_[fd].lock()->getLast_time_wheel_scale_()].erase(fd);
         } else if (events & EPOLLIN) {
           if (fd_connector_map_[fd].lock()) {
             ret = fd_connector_map_[fd].lock()->GetRequest();
             if (ret) {
-              if (DelConn(fd) == -1 || close(fd) == -1) {
-                log_err("disconnect error GetRequest");
-                continue;
-              }
               log_warn("GetRequest error");
               continue;
             }
             if (fd_connector_map_[fd].lock()->isIs_reply_()) {
-              if (ep_ptr_->ModEvent(fd, EPOLLIN, EPOLLOUT) == -1) {
-                if (DelConn(fd) == -1 || close(fd) == -1) {
-                  log_err("disconnect error to EPOLLOUT");
-                }
-                log_warn("ModEvent error to EPOLLOUT");
+              ret = fd_connector_map_[fd].lock()->SendReply();
+              if (ret) {
+                log_warn("SendReply error");
                 continue;
-              }     
+              }
             }
             int32_t hb = fd_connector_map_[fd].lock()->getHeart_beat_();
-            /*
-             * The heartbeat strategy:
-             * if the client uploads the heartbeat time, it uses the client's,
-             * otherwise it uses the default.
-             */
-            time_wheel_[(time_wheel_scale_ + hb) % time_wheel_size_].insert(
-                std::make_pair(fd_connector_map_[fd].lock()->getFd_(),
-                               fd_connector_map_[fd].lock()));
-            /*
-             * Remove the previous pointer inserted in the time wheel to save
-             * memory
-             */
-            time_wheel_
-                [fd_connector_map_[fd].lock()->getLast_time_wheel_scale_()]
-                    .erase(fd_connector_map_[fd].lock()->getFd_());
-
+            int32_t last_time_wheel_scale = fd_connector_map_[fd].lock()->getLast_time_wheel_scale_();
+            if (last_time_wheel_scale != time_wheel_scale_ + hb) {
+              /*
+               * The heartbeat strategy:
+               * if the client uploads the heartbeat time, it uses the client's,
+               * otherwise it uses the default.
+               */
+              time_wheel_[(time_wheel_scale_ + hb) % time_wheel_size_].insert(
+                  std::make_pair(fd_connector_map_[fd].lock()->getFd_(), fd_connector_map_[fd].lock()));
+              /*
+               * Remove the previous pointer inserted in the time wheel to save
+               * memory
+               */
+              time_wheel_[last_time_wheel_scale].erase(fd);
+            }
             fd_connector_map_[fd].lock()->setLast_active_time_(GetNowMillis());
-            fd_connector_map_[fd].lock()->setLast_time_wheel_scale_(
-                time_wheel_scale_);
+            fd_connector_map_[fd].lock()->setLast_time_wheel_scale_((time_wheel_scale_ + hb) % time_wheel_size_);
           } else {
             log_warn("expire");
-          }
-        }
-        if (fd_connector_map_[fd].lock()->isIs_reply_()) {
-          if (events & EPOLLOUT) { 
-            ret = fd_connector_map_[fd].lock()->SendReply();
-            if (ret) {
-              if (DelConn(fd) == -1 || close(fd) == -1) {
-                 log_err("disconnect error reply");
-               }
-              log_warn("SendReply error");
-            }
-            if (ep_ptr_->ModEvent(fd, 0, EPOLLIN) == -1) {
-              DelConn(fd);
-              close(fd);
-              log_warn("ModEvent error to EPOLLIN");  
-              continue;
-            }
           }
         }
       }
@@ -182,7 +152,7 @@ void WorkThread::ThreadMain() {
   }
 }
 
-int WorkThread::DelConn(const int &conn_fd) {
+int WorkThread::DelConn(const int conn_fd) {
   fd_connector_map_.erase(conn_fd);
   return ep_ptr_->DelEvent(conn_fd);
 }

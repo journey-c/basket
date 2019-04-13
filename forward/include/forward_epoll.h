@@ -23,7 +23,6 @@ class Epoll {
   int efd_;
   std::vector<struct epoll_event> events_;
 };
-
 };
 
-#endif // FORWARD_INCLUDE_FORWARD_EPOLL_H_
+#endif  // FORWARD_INCLUDE_FORWARD_EPOLL_H_

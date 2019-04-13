@@ -1,8 +1,8 @@
 #ifndef FORWARD_INCLUDE_DISPATCH_THREAD_H_
 #define FORWARD_INCLUDE_DISPATCH_THREAD_H_
 
-#include "forward/include/work_thread.h"
 #include "forward/include/forward_socket.h"
+#include "forward/include/work_thread.h"
 
 namespace forward {
 
@@ -12,10 +12,7 @@ class ConnFactory;
 
 class DispatchThread {
  public:
-  DispatchThread(const std::string &ip_port,
-                 const int &port,
-                 const int &work_num,
-                 forward::ConnFactory *conn_factory);
+  DispatchThread(const std::string &ip_port, const int &port, const int &work_num, forward::ConnFactory *conn_factory);
   virtual ~DispatchThread();
   int HandlingNewConnection(int conn_fd, std::string ip, uint16_t port);
   void Start();
@@ -31,10 +28,10 @@ class DispatchThread {
   int time_out_ms_;
   int distribution_pointer_;
   std::atomic<bool> quit_;
-  Socket* socket_ptr_;
-  Epoll* epoll_ptr_;
-  WorkThread** work_threads_;
-  std::thread* thread_ptr_;
+  Socket *socket_ptr_;
+  Epoll *epoll_ptr_;
+  WorkThread **work_threads_;
+  std::thread *thread_ptr_;
 
   /*
    * Not copy and copy assign
@@ -42,7 +39,6 @@ class DispatchThread {
   DispatchThread(const DispatchThread &);
   void operator=(const DispatchThread &);
 };
-
 };
 
-#endif // FORWARD_INCLUDE_DISPATCH_THREAD_H_
+#endif  // FORWARD_INCLUDE_DISPATCH_THREAD_H_

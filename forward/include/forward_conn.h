@@ -11,15 +11,14 @@ class WorkThread;
 
 class ForwardConn {
  public:
-  explicit ForwardConn(int fd_,
-                       const std::string &remote_ip_,
-                       int16_t remote_port_,
-                       WorkThread *thread_);
+  explicit ForwardConn(int fd_, const std::string &remote_ip_, int16_t remote_port_, WorkThread *thread_);
   virtual ~ForwardConn();
 
   virtual int GetRequest() = 0;
 
   virtual int SendReply() = 0;
+
+  virtual int ClearUp(const std::string msg) = 0;
 
   int getFd_() const {
     return fd_;
@@ -29,18 +28,18 @@ class ForwardConn {
   }
   void setHeart_beat_(const int heart_beat) {
     heart_beat_ = heart_beat;
-  } 
+  }
   int32_t getHeart_beat_() const {
     return heart_beat_;
   }
-  void setLast_time_wheel_scale_(const int last_time_wheel_scale) {
+  void setLast_time_wheel_scale_(const int32_t last_time_wheel_scale) {
     last_time_wheel_scale_ = last_time_wheel_scale;
   }
-  int getLast_time_wheel_scale_() {
+  int32_t getLast_time_wheel_scale_() {
     return last_time_wheel_scale_;
   }
   void setLast_active_time_(const int64_t last_active_time) {
-    last_active_time_ = last_active_time; 
+    last_active_time_ = last_active_time;
   }
   uint64_t getLast_active_time_() {
     return last_active_time_;
@@ -59,7 +58,7 @@ class ForwardConn {
   std::string remote_ip_;
   int16_t remote_port_;
   int32_t heart_beat_;
-  int last_time_wheel_scale_;
+  int32_t last_time_wheel_scale_;
   uint64_t last_active_time_;
   bool is_reply_;
   /*
@@ -76,10 +75,11 @@ class ForwardConn {
 
 class ConnFactory {
  public:
-  virtual ~ConnFactory() {}
+  virtual ~ConnFactory() {
+  }
   virtual ForwardConn *NewConn(const int fd_, const std::string &remote_ip_, int16_t remote_port_,
                                forward::WorkThread *thread_) const = 0;
 };
 }
 
-#endif // FORWARD_INCLUDE_FORWARD_CONN_H_
+#endif  // FORWARD_INCLUDE_FORWARD_CONN_H_

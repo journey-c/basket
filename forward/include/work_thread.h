@@ -3,10 +3,10 @@
 
 #include <atomic>
 #include <functional>
-#include <thread>
-#include <mutex>
 #include <map>
+#include <mutex>
 #include <queue>
+#include <thread>
 
 #include "forward/include/forward_conn.h"
 #include "forward/include/forward_define.h"
@@ -38,7 +38,7 @@ class WorkThread {
     WorkThread::conn_factory_ = conn_factory_;
   }
 
-  int DelConn(const int &conf_fd);
+  int DelConn(const int conf_fd);
   void CleanUpExpiredConnection();
   void Start();
   void Quit();

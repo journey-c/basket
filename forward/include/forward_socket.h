@@ -35,8 +35,7 @@ class Socket {
   bool is_block_;
   bool is_listen_;
 };
-
 };
 
-#endif // FORWARD_INCLUDE_FORWARD_SOCKET_H_
+#endif  // FORWARD_INCLUDE_FORWARD_SOCKET_H_
 
