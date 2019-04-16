@@ -39,7 +39,7 @@ extern LogMeta log_meta;
 
 int InitLog(const LogLevel level = kInfo, const std::string &log_dir = "./log", const std::string &file_pre = "");
 
-int BackupAndSwitchLog();
+void BackupAndSwitchLog(const std::string file_suf);
 void SetLogLevel(LogLevel level);
 void SetDir(const std::string &log_dir);
 std::string GetLogLevelStr(LogLevel level);

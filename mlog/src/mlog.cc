@@ -6,6 +6,7 @@
 #include <cstdarg>
 #include <string.h>
 
+#include <iostream>
 #include <string>
 
 #include "mlog/include/mlog.h"
@@ -72,11 +73,13 @@ int CreateLogFile() {
   for (int32_t idx = kTrace; idx < kMaxLevel; idx++) {
     std::string file_name = log_meta.log_level_str_[static_cast<LogLevel>(idx)];
     std::string file_path = log_meta.log_dir_ + "/" + log_meta.file_pre_ + "_" + file_name + ".log";
+    std::cout << file_path << std::endl;
     file = fopen(file_path.c_str(), "a+");
-    if (file == NULL)
+    if (file == nullptr)
       return -1;
     log_meta.log_level_file_.insert(std::make_pair(static_cast<LogLevel>(idx), std::make_shared<FILE *>(file)));
   }
+  return 0;
 }
 
 int InitLog(const LogLevel level, const std::string &log_dir,
@@ -101,26 +104,17 @@ int InitLog(const LogLevel level, const std::string &log_dir,
   return status;
 }
 
-int BackupAndSwitchLog() {
+void BackupAndSwitchLog(const std::string file_suf) {
   std::lock_guard<std::mutex> log_level_str_guard(log_level_str_mutex);
+
   std::string dir = log_meta.log_dir_;
-  if (dir.empty())
-    return 0;
-
-  char buf[64];
-  time_t now = time(NULL);
-  strftime(buf, sizeof(buf), "%Y%m%d", localtime(&now));
-
   if (dir[dir.size() - 1] == '/')
     dir.erase(dir.size() - 1);
 
   dir += "/backup";
 
   if (access(dir.c_str(), F_OK)) {
-    int status = CreateDir(dir, DIR_MASK);
-    if (status != 0) {
-      return status;
-    }
+    CreateDir(dir, DIR_MASK);
   }
   std::string old_name;
   std::string new_name;
@@ -129,13 +123,10 @@ int BackupAndSwitchLog() {
         + ".log";
     new_name =
         log_meta.log_dir_ + "/backup/" + log_meta.file_pre_ + "_" + log_meta.log_level_str_[static_cast<LogLevel>(idx)]
-            + ".log" + "." + buf;
-    int status = rename(old_name.c_str(), new_name.c_str());
-    if (status)
-      return status;
+            + ".log" + "." + file_suf;
+    rename(old_name.c_str(), new_name.c_str());
   }
   CreateLogFile();
-  return 0;
 }
 
 void SetLogLevel(LogLevel level) {
