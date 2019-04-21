@@ -114,17 +114,23 @@ void WorkThread::ThreadMain() {
         } else if (events & EPOLLIN) {
           if (fd_connector_map_[fd].lock()) {
             ret = fd_connector_map_[fd].lock()->GetRequest();
-            if (ret) {
+            if (ret != kReadAll && ret != kReadHalf) {
+              // kReadErr kReadClose kParseErr
+              time_wheel_[fd_connector_map_[fd].lock()->getLast_time_wheel_scale_()].erase(fd);
               log_warn("GetRequest error");
               continue;
-            }
+            } 
+
             if (fd_connector_map_[fd].lock()->isIs_reply_()) {
               ret = fd_connector_map_[fd].lock()->SendReply();
-              if (ret) {
+              if (ret != kWriteAll && ret != kWriteHalf) {
+                // kWriteErr
+                time_wheel_[fd_connector_map_[fd].lock()->getLast_time_wheel_scale_()].erase(fd);               
                 log_warn("SendReply error");
                 continue;
               }
             }
+
             int32_t hb = fd_connector_map_[fd].lock()->getHeart_beat_();
             int32_t last_time_wheel_scale = fd_connector_map_[fd].lock()->getLast_time_wheel_scale_();
             if (last_time_wheel_scale != time_wheel_scale_ + hb) {

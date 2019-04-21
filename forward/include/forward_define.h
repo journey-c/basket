@@ -30,11 +30,17 @@ namespace forward {
 #define log_info(M, ...) fprintf(stderr, "[INFO] (%s:%d) " M "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 
 enum ReadStatus {
-  kOk = 0,
+  kReadAll = 0,
   kReadHalf = 1,
-  kReadAll = 2,
-  kReadErr = 3,
-  kReadClose = 4,
+  kReadErr = 2,
+  kReadClose = 3,
+  kParseErr = 5,
+};
+
+enum WriteStatus {
+  kWriteAll = 0,
+  kWriteHalf = 1,
+  kWriteErr = 2,
 };
 };
 
