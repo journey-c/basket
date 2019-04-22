@@ -34,6 +34,7 @@ enum ReadStatus {
   kReadHalf = 1,
   kReadErr = 2,
   kReadClose = 3,
+  kFullErr = 4,
   kParseErr = 5,
 };
 
