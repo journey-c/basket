@@ -6,7 +6,6 @@
 #include <cstdarg>
 #include <string.h>
 
-#include <iostream>
 #include <string>
 
 #include "mlog/include/mlog.h"
@@ -73,7 +72,6 @@ int CreateLogFile() {
   for (int32_t idx = kTrace; idx < kMaxLevel; idx++) {
     std::string file_name = log_meta.log_level_str_[static_cast<LogLevel>(idx)];
     std::string file_path = log_meta.log_dir_ + "/" + log_meta.file_pre_ + "_" + file_name + ".log";
-    std::cout << file_path << std::endl;
     file = fopen(file_path.c_str(), "a+");
     if (file == nullptr)
       return -1;
