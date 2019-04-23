@@ -23,13 +23,13 @@ LogMeta log_meta;
 LogMeta::LogMeta() {
   std::lock_guard<std::mutex> log_level_str_guard(log_level_str_mutex);
 
-  log_level_str_.insert(std::make_pair(kTrace, "Trace"));
-  log_level_str_.insert(std::make_pair(kDebug, "Debug"));
-  log_level_str_.insert(std::make_pair(kInfo, "Info"));
-  log_level_str_.insert(std::make_pair(kWarn, "Warn"));
-  log_level_str_.insert(std::make_pair(kError, "Error"));
-  log_level_str_.insert(std::make_pair(kDot, "Dot"));
-  log_level_str_.insert(std::make_pair(kFatal, "Fatal"));
+  log_level_str_.insert(std::make_pair(kTrace, "trace"));
+  log_level_str_.insert(std::make_pair(kDebug, "debug"));
+  log_level_str_.insert(std::make_pair(kInfo, "info"));
+  log_level_str_.insert(std::make_pair(kWarn, "warn"));
+  log_level_str_.insert(std::make_pair(kError, "error"));
+  log_level_str_.insert(std::make_pair(kDot, "dot"));
+  log_level_str_.insert(std::make_pair(kFatal, "fatal"));
 }
 
 LogMeta::~LogMeta() {
