@@ -2,7 +2,6 @@
 #include <sys/epoll.h>
 #include <sys/time.h>
 #include <unistd.h>
-#include <iostream>
 
 #include "forward/include/forward_tools.h"
 #include "forward/include/work_thread.h"
@@ -105,53 +104,56 @@ void WorkThread::ThreadMain() {
           }
         }
       } else {
-        if (events & EPOLLERR || events & EPOLLHUP) {
-          int ret = fd_connector_map_[fd].lock()->ClearUp("The client is disconnected abnormally");
-          if (ret) {
-            log_warn("ClearUp error");
-          }
-          time_wheel_[fd_connector_map_[fd].lock()->getLast_time_wheel_scale_()].erase(fd);
-        } else if (events & EPOLLIN) {
-          if (fd_connector_map_[fd].lock()) {
+        if (fd_connector_map_[fd].lock()) {
+          if (events & EPOLLIN) {
             ret = fd_connector_map_[fd].lock()->GetRequest();
             if (ret != kReadAll && ret != kReadHalf) {
               // kReadErr kReadClose kParseErr
               time_wheel_[fd_connector_map_[fd].lock()->getLast_time_wheel_scale_()].erase(fd);
               log_warn("GetRequest error");
               continue;
-            } 
-
-            if (fd_connector_map_[fd].lock()->isIs_reply_()) {
-              ret = fd_connector_map_[fd].lock()->SendReply();
-              if (ret != kWriteAll && ret != kWriteHalf) {
-                // kWriteErr
-                time_wheel_[fd_connector_map_[fd].lock()->getLast_time_wheel_scale_()].erase(fd);               
-                log_warn("SendReply error");
-                continue;
-              }
             }
-
-            int32_t hb = fd_connector_map_[fd].lock()->getHeart_beat_();
-            int32_t last_time_wheel_scale = fd_connector_map_[fd].lock()->getLast_time_wheel_scale_();
-            if (last_time_wheel_scale != time_wheel_scale_ + hb) {
-              /*
-               * The heartbeat strategy:
-               * if the client uploads the heartbeat time, it uses the client's,
-               * otherwise it uses the default.
-               */
-              time_wheel_[(time_wheel_scale_ + hb) % time_wheel_size_].insert(
-                  std::make_pair(fd_connector_map_[fd].lock()->getFd_(), fd_connector_map_[fd].lock()));
-              /*
-               * Remove the previous pointer inserted in the time wheel to save
-               * memory
-               */
-              time_wheel_[last_time_wheel_scale].erase(fd);
-            }
-            fd_connector_map_[fd].lock()->setLast_active_time_(GetNowMillis());
-            fd_connector_map_[fd].lock()->setLast_time_wheel_scale_((time_wheel_scale_ + hb) % time_wheel_size_);
-          } else {
-            log_warn("expire");
           }
+
+          if (fd_connector_map_[fd].lock()->isIs_reply_()) {
+            ret = fd_connector_map_[fd].lock()->SendReply();
+            if (ret != kWriteAll && ret != kWriteHalf) {
+              // kWriteErr
+              time_wheel_[fd_connector_map_[fd].lock()->getLast_time_wheel_scale_()].erase(fd);
+              log_warn("SendReply error");
+              continue;
+            }
+          }
+
+          if (events & EPOLLERR || events & EPOLLHUP) {
+            int ret = fd_connector_map_[fd].lock()->ClearUp("The client is disconnected abnormally");
+            if (ret) {
+              log_warn("ClearUp error");
+            }
+            time_wheel_[fd_connector_map_[fd].lock()->getLast_time_wheel_scale_()].erase(fd);
+            continue;
+          }
+
+          int32_t hb = fd_connector_map_[fd].lock()->getHeart_beat_();
+          int32_t last_time_wheel_scale = fd_connector_map_[fd].lock()->getLast_time_wheel_scale_();
+          if (last_time_wheel_scale != time_wheel_scale_ + hb) {
+            /*
+             * The heartbeat strategy:
+             * if the client uploads the heartbeat time, it uses the client's,
+             * otherwise it uses the default.
+             */
+            time_wheel_[(time_wheel_scale_ + hb) % time_wheel_size_].insert(
+                std::make_pair(fd_connector_map_[fd].lock()->getFd_(), fd_connector_map_[fd].lock()));
+            /*
+             * Remove the previous pointer inserted in the time wheel to save
+             * memory
+             */
+            time_wheel_[last_time_wheel_scale].erase(fd);
+          }
+          fd_connector_map_[fd].lock()->setLast_active_time_(GetNowMillis());
+          fd_connector_map_[fd].lock()->setLast_time_wheel_scale_((time_wheel_scale_ + hb) % time_wheel_size_);
+        } else {
+          log_warn("expire");
         }
       }
     }
