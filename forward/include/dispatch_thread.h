@@ -12,7 +12,7 @@ class ConnFactory;
 
 class DispatchThread {
  public:
-  DispatchThread(const std::string &ip_port, const int &port, const int &work_num, forward::ConnFactory *conn_factory);
+  DispatchThread(const std::string &ip, const int &port, const int &work_num, forward::ConnFactory *conn_factory);
   virtual ~DispatchThread();
   int HandlingNewConnection(int conn_fd, std::string ip, uint16_t port);
   void Start();
