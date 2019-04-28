@@ -109,6 +109,10 @@ void WorkThread::ThreadMain() {
             ret = fd_connector_map_[fd].lock()->GetRequest();
             if (ret != kReadAll && ret != kReadHalf) {
               // kReadErr kReadClose kParseErr
+              int ret = fd_connector_map_[fd].lock()->ClearUp("The client is disconnected abnormally");
+              if (ret) {
+                log_warn("ClearUp error");
+              }  
               time_wheel_[fd_connector_map_[fd].lock()->getLast_time_wheel_scale_()].erase(fd);
               log_warn("GetRequest error");
               continue;
@@ -119,6 +123,10 @@ void WorkThread::ThreadMain() {
             ret = fd_connector_map_[fd].lock()->SendReply();
             if (ret != kWriteAll && ret != kWriteHalf) {
               // kWriteErr
+              int ret = fd_connector_map_[fd].lock()->ClearUp("The client is disconnected abnormally");
+              if (ret) {
+                log_warn("ClearUp error");
+              }
               time_wheel_[fd_connector_map_[fd].lock()->getLast_time_wheel_scale_()].erase(fd);
               log_warn("SendReply error");
               continue;
