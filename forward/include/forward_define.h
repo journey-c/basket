@@ -10,7 +10,7 @@ namespace forward {
 #define BACKLOG 5
 
 #define DEF_TIME_WHEEL_SIZE 65536
-#define DEF_HEART_BEAT 600
+#define DEF_HEART_BEAT 60
 #define DEF_CLEAN_INTERVAL 1000
 #define DEF_MAX_MSG_LEN 2048
 

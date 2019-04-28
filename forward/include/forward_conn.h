@@ -4,6 +4,7 @@
 #include <string>
 
 #include "forward/include/work_thread.h"
+#include "forward/include/forward_define.h"
 
 namespace forward {
 
@@ -14,9 +15,9 @@ class ForwardConn {
   explicit ForwardConn(int fd_, const std::string &remote_ip_, int16_t remote_port_, WorkThread *thread_);
   virtual ~ForwardConn();
 
-  virtual int GetRequest() = 0;
+  virtual ReadStatus GetRequest() = 0;
 
-  virtual int SendReply() = 0;
+  virtual WriteStatus SendReply() = 0;
 
   virtual int ClearUp(const std::string msg) = 0;
 

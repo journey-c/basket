@@ -14,27 +14,35 @@ class MyConn : public forward::ForwardConn {
     std::cout << "Myconn Expired" << std::endl;
   }
 
-  int GetRequest() override {
+  forward::ReadStatus GetRequest() override {
     ForwardConn::setHeart_beat_(5);
     char buf[1024];
-    auto ret = read(getFd_(), buf, sizeof(buf) / sizeof(buf[0]));
-    if (ret < 0) {
+    ssize_t ret = read(getFd_(), buf, sizeof(buf) / sizeof(buf[0]));
+    if (ret == 0) {
       std::cerr << "read error" << ret << std::endl;
-      return static_cast<int>(ret);
+      return forward::kReadClose;
+    } else if (ret == -1) {
+      if (errno == EINTR) {
+        return forward::kReadHalf;
+      }
+      return forward::kReadErr;
     }
+
     msg_ = buf;
     std::cout << msg_ << std::endl;
     setIs_reply_(true);
-    return 0;
+    return forward::kReadAll;
   }
 
-  int SendReply() override {
-    auto ret = write(getFd_(), msg_.c_str(), msg_.size());
-    if (ret < 0) {
-      std::cerr << "write error" << std::endl;
-      return static_cast<int>(ret);
+  forward::WriteStatus SendReply() override {
+    ssize_t ret = write(getFd_(), msg_.c_str(), msg_.size());
+    if (ret == -1) {
+      if (errno == EAGAIN) {
+        return forward::kWriteHalf;
+      }
+      return forward::kWriteErr;
     }
-    return 0;
+    return forward::kWriteAll;
   }
 
   int ClearUp(const std::string msg) override {

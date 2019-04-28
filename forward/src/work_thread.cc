@@ -93,9 +93,11 @@ void WorkThread::ThreadMain() {
             auto tmp = std::shared_ptr<forward::ForwardConn>(conn_factory_->NewConn(cn.conn_fd_, cn.ip_, cn.port_, this));
 
             fd_connector_map_[cn.conn_fd_] = tmp;
-            time_wheel_[time_wheel_scale_].insert(std::make_pair(cn.conn_fd_, tmp));
+            int32_t hb = tmp->getHeart_beat_();
+
+            time_wheel_[(time_wheel_scale_ + hb) % time_wheel_size_].insert(std::make_pair(cn.conn_fd_, tmp));
             fd_connector_map_[cn.conn_fd_].lock()->setLast_active_time_(GetNowMillis());
-            fd_connector_map_[cn.conn_fd_].lock()->setLast_time_wheel_scale_(time_wheel_scale_);
+            fd_connector_map_[cn.conn_fd_].lock()->setLast_time_wheel_scale_((time_wheel_scale_ + hb) % time_wheel_size_);
 
             if (ep_ptr_->AddEvent(cn.conn_fd_, EPOLLIN) == -1) {
               log_warn("AddEvent error");
@@ -112,13 +114,12 @@ void WorkThread::ThreadMain() {
               int ret = fd_connector_map_[fd].lock()->ClearUp("The client is disconnected abnormally");
               if (ret) {
                 log_warn("ClearUp error");
-              }  
+              }
               time_wheel_[fd_connector_map_[fd].lock()->getLast_time_wheel_scale_()].erase(fd);
               log_warn("GetRequest error");
               continue;
             }
           }
-
           if (fd_connector_map_[fd].lock()->isIs_reply_()) {
             ret = fd_connector_map_[fd].lock()->SendReply();
             if (ret != kWriteAll && ret != kWriteHalf) {
@@ -132,7 +133,6 @@ void WorkThread::ThreadMain() {
               continue;
             }
           }
-
           if (events & EPOLLERR || events & EPOLLHUP) {
             int ret = fd_connector_map_[fd].lock()->ClearUp("The client is disconnected abnormally");
             if (ret) {
@@ -141,7 +141,6 @@ void WorkThread::ThreadMain() {
             time_wheel_[fd_connector_map_[fd].lock()->getLast_time_wheel_scale_()].erase(fd);
             continue;
           }
-
           int32_t hb = fd_connector_map_[fd].lock()->getHeart_beat_();
           int32_t last_time_wheel_scale = fd_connector_map_[fd].lock()->getLast_time_wheel_scale_();
           if (last_time_wheel_scale != time_wheel_scale_ + hb) {
