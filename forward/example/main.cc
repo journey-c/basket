@@ -45,7 +45,7 @@ class MyConn : public forward::ForwardConn {
     return forward::kWriteAll;
   }
 
-  int ClearUp(const std::string msg) override {
+  int32_t ClearUp(const std::string msg) override {
     std::cout << msg << std::endl;
     return 0;
   }

@@ -48,7 +48,8 @@ int DispatchThread::HandlingNewConnection(int conn_fd, std::string ip, uint16_t 
   auto ret = write(work_threads_[distribution_pointer_]->getNotify_send_fd_(), "", 1);
   distribution_pointer_++;
   distribution_pointer_ %= work_num_;
-  if (ret == -1) return -1;
+  if (ret == -1)
+    return -1;
   return 0;
 }
 

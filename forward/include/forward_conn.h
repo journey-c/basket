@@ -19,7 +19,9 @@ class ForwardConn {
 
   virtual WriteStatus SendReply() = 0;
 
-  virtual int ClearUp(const std::string msg) = 0;
+  virtual int ClearUp(const std::string msg) {
+    return 0;
+  }
 
   int getFd_() const {
     return fd_;
