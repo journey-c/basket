@@ -65,6 +65,7 @@ void DispatchThread::ThreadMain() {
   listen_fd_ = socket_ptr_->getSock_fd_();
   if (listen_fd_ < 0) {
     log_err("listen error");
+    exit(-1);
   }
 
   ret = epoll_ptr_->AddEvent(socket_ptr_->getSock_fd_(), EPOLLIN);

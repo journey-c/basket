@@ -33,18 +33,21 @@ int Socket::Listen(const std::string &bind_ip) {
   //  打开 socket 端口复用, 防止测试的时候出现 Address already in use
   int on = 1;
   ret = setsockopt(sock_fd_, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
-  if (-1 == ret) {
-    log_err("set socket error")
+  if (ret == -1) {
+    log_err("set socket error");
+    return ret;
   }
 #endif
 
   int flags = fcntl(sock_fd_, F_GETFL, 0);
   if (flags == -1) {
     log_err("Get file status flags failed");
+    return ret;
   }
 
   if (fcntl(sock_fd_, F_SETFL, flags | FD_CLOEXEC) == -1) {
     log_err("Set file status flags failed");
+    return -1;
   }
 
   bzero(&serverAddr, sizeof(serverAddr));
@@ -60,11 +63,13 @@ int Socket::Listen(const std::string &bind_ip) {
   ret = bind(sock_fd_, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
   if (ret < kSUCCESS) {
     log_err("bind error");
+    return -1;
   }
 
   ret = listen(sock_fd_, BACKLOG);
   if (ret < 0) {
     log_err("listen error");
+    return -1;
   }
 
   is_listen_ = true;
@@ -73,10 +78,11 @@ int Socket::Listen(const std::string &bind_ip) {
     ret = SetNonBlock(sock_fd_);
     if (ret == -1) {
       log_err("set listen_fd non block failed");
+      return -1;
     }
   }
 
-  return ret;
+  return 0;
 }
 
 int Socket::SetNonBlock(int sockfd) {
