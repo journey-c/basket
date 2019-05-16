@@ -7,7 +7,7 @@ namespace forward {
 
 // socket
 #define DEF_PROTOCOL 0
-#define BACKLOG 5
+#define BACKLOG 2048
 
 #define DEF_TIME_WHEEL_SIZE 65536
 #define DEF_HEART_BEAT 60
