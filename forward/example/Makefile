@@ -1,7 +1,7 @@
 CXX = g++
 CXXFLAGS = -std=c++11
 
-OBJECT = example
+OBJECT = echo_server
 
 SRC_PATH = .
 BASKET_PATH = ../..
@@ -25,7 +25,7 @@ all : $(OBJECT)
 	mv $(OBJECT) $(OUT_PATH)/bin
 	@echo "oh, baby, success, go, go, go ..."
 	
-example : $(FORWARD) $(OBJS)
+$(OBJECT) : $(FORWARD) $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
 $(FORWARD) :

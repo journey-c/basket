@@ -22,7 +22,6 @@ ForwardConn::~ForwardConn() {
     log_warn("disconnect error");
   }
   close(fd_);
-  log_info("disconect");
 }
 
 bool ForwardConn::SetNoBlock() {

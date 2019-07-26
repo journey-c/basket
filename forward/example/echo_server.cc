@@ -11,7 +11,7 @@ class MyConn : public forward::ForwardConn {
       : ForwardConn(fd, remote_ip, remote_port, thread), msg_("") {
   }
   ~MyConn() override {
-    std::cout << "Myconn Expired" << std::endl;
+    std::cout << "Myconn Disconnect" << std::endl;
   }
 
   forward::ReadStatus GetRequest() override {
@@ -62,9 +62,15 @@ class MyConnFactory : public forward::ConnFactory {
   }
 };
 
-int main() {
+int main(int32_t argv, char **argc) {
+  if (argv != 3) {
+    fprintf(stderr, "Usage:\n\t./echo_server ip port\n");
+    return -1;
+  }
+  std::string ip = argc[1];
+  int32_t port = atoi(argc[2]);
   auto *mf = new MyConnFactory();
-  forward::DispatchThread *dt = new forward::DispatchThread("0.0.0.0", 8080, 1, mf);
+  forward::DispatchThread *dt = new forward::DispatchThread(ip, port, 1, mf);
   dt->Start();
   for (;;) {
   }
