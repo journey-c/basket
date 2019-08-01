@@ -7,6 +7,9 @@
 
 namespace forward {
 
+static uint64_t http_max_header_len = ;
+static uint64_t http_packet_max_len = 1024 * 1024;
+
 static std::map<std::string, std::string> http_status_code{{"100", "Continue"},
                                                            {"101", "Switching Protocols "},
 
@@ -98,10 +101,13 @@ class ForwardHttpConn : public ForwardConn {
 
   virtual WriteStatus SendReply();
 
+  virtual int32_t HandlingRequest(HttpRequest *req, HttpResponse *resp);
+
   virtual int ClearUp(const std::string msg);
 
  private:
-  HttpReadStatus http_read_status_;  
+  HttpConnStatus conn_status_;
+  uint64_t keep_live_;
 
   char *rbuf_;
   uint64_t rbuf_pos_;

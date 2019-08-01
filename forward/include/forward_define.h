@@ -10,7 +10,7 @@ namespace forward {
 #define BACKLOG 2048
 
 #define DEF_TIME_WHEEL_SIZE 65536
-#define DEF_HEART_BEAT 60
+#define DEF_HEART_BEAT 30
 #define DEF_CLEAN_INTERVAL 1000
 #define DEF_MAX_MSG_LEN 2048
 
@@ -59,13 +59,12 @@ enum WriteStatus {
 #define PATCH "PATCH"      // 是对 PUT 方法的补充，用来对已知资源进行局部更新。
 };
 
-enum HttpReadStatus {
-  kNone = -1,
+enum HttpConnStatus {
   kHearder = 0,
   kBody = 1,
   kComplete = 2,
 };
 
-#define DEFINE_HTTP_READ_BUFFER_LEN 1024*1024
+#define DEF_HTTP_BUFFER_LEN 4194304 // 4M
 
 #endif  // FORWARD_INCLUDE_FORWARD_DEFINE_H_
